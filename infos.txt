@@ -1,0 +1,47 @@
+WoWWee MiP
+http://joost.damad.be/2013/08/experiments-with-bluetooth-low-energy.html
+
+== Install bluez v5.3 ==
+
+== Using bluetooth device ==
+
+
+arnaud@eeepc:~$ hcitool dev
+Devices:
+  hci0  74:F0:6D:BB:2E:10
+
+http://doc.ubuntu-fr.org/bluetooth#problemes_connus :
+arnaud@eeepc:~$ sudo rfkill unblock all
+arnaud@eeepc:~$ sudo hciconfig hci0 up
+
+arnaud@eeepc:~$ sudo hcitool -i hci0 lescan
+D0:39:72:B7:AF:66 (unknown)
+D0:39:72:B7:AF:66 Bubi
+
+== Connecting to MiP ==
+
+arnaud@eeepc:~$ sudo gatttool -i hci0 -b D0:39:72:B7:AF:66 -I
+> connect
+
+Get handles:
+http://www.jaredwolff.com/blog/get-started-with-bluetooth-low-energy/
+> primary
+> char-desc
+
+Read LED:
+> char-read-hnd 0x83
+
+http://www.compulab.co.il/utilite-computer/forum/viewtopic.php?f=77&t=1639
+> char-read-hnd 0x000e
+> char-write-cmd 0x0013 780060
+
+== Sending orders ==
+https://github.com/WowWeeLabs
+https://github.com/WowWeeLabs/MiP-BLE-Protocol
+Command doc:
+https://github.com/WowWeeLabs/MiP-BLE-Protocol/blob/master/MiP-Protocol.md
+https://stackoverflow.com/questions/25536695/wowwee-mip-command-over-bluetooth-in-linux-shell-with-gatttool
+
+
+Non interactive:
+http://www.humbug.in/2014/using-gatttool-manualnon-interactive-mode-read-ble-devices/
