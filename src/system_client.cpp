@@ -1,4 +1,4 @@
-#include <string>
+#include "exec_system_get_output.h"
 
 // http://www.humbug.in/2014/using-gatttool-manualnon-interactive-mode-read-ble-devices/
 class Mip {
@@ -8,6 +8,10 @@ public:
 
   bool connect(const std::string & address) {
     _address = address;
+  }
+
+  bool play_sound() {
+     // sudo gatttool ­i hci1 ­b D0:39:72:B7:AF:66
   }
 
 protected:

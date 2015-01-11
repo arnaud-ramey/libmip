@@ -3,4 +3,4 @@ project( mip )
 # Debug, Release, RelWithDebInfo and MinSizeRe
 set(CMAKE_BUILD_TYPE Debug)
 
-add_executable(system_client system_client.cpp)
+add_subdirectory(src)
