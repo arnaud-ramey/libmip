@@ -11,7 +11,7 @@ public:
   }
 
   bool play_sound() {
-     // sudo gatttool ­i hci1 ­b D0:39:72:B7:AF:66
+     // sudo gatttool -­i hci1 ­-b D0:39:72:B7:AF:66 --char­-write­ -a 0x0013 -n 0602
   }
 
 protected:
