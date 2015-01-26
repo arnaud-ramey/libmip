@@ -1,0 +1,82 @@
+Primary:
+attr handle = 0x0001, end grp handle = 0x0007 uuid: 0000180a-0000-1000-8000-00805f9b34fb
+attr handle = 0x0008, end grp handle = 0x000b uuid: 0000180f-0000-1000-8000-00805f9b34fb
+attr handle = 0x000c, end grp handle = 0x0010 uuid: 0000ffe0-0000-1000-8000-00805f9b34fb
+attr handle = 0x0011, end grp handle = 0x0014 uuid: 0000ffe5-0000-1000-8000-00805f9b34fb
+attr handle = 0x0015, end grp handle = 0x0033 uuid: 0000fff0-0000-1000-8000-00805f9b34fb
+attr handle = 0x0034, end grp handle = 0x0042 uuid: 0000ffd0-0000-1000-8000-00805f9b34fb
+attr handle = 0x0043, end grp handle = 0x004a uuid: 0000ffc0-0000-1000-8000-00805f9b34fb
+attr handle = 0x004b, end grp handle = 0x0057 uuid: 0000ffb0-0000-1000-8000-00805f9b34fb
+attr handle = 0x0058, end grp handle = 0x005f uuid: 0000ffa0-0000-1000-8000-00805f9b34fb
+attr handle = 0x0060, end grp handle = 0x007e uuid: 0000ff90-0000-1000-8000-00805f9b34fb
+attr handle = 0x007f, end grp handle = 0x0083 uuid: 0000fc60-0000-1000-8000-00805f9b34fb
+attr handle = 0x0084, end grp handle = 0xffff uuid: 0000fe00-0000-1000-8000-00805f9b34fb
+
+Characteristics:
+handle = 0x0002, char properties = 0x02, char value handle = 0x0003, uuid = 00002a23-0000-1000-8000-00805f9b34fb
+handle = 0x0004, char properties = 0x02, char value handle = 0x0005, uuid = 00002a26-0000-1000-8000-00805f9b34fb
+handle = 0x0006, char properties = 0x02, char value handle = 0x0007, uuid = 00002a29-0000-1000-8000-00805f9b34fb
+handle = 0x0009, char properties = 0x12, char value handle = 0x000a, uuid = 00002a19-0000-1000-8000-00805f9b34fb
+handle = 0x000d, char properties = 0x10, char value handle = 0x000e, uuid = 0000ffe4-0000-1000-8000-00805f9b34fb
+handle = 0x0012, char properties = 0x0c, char value handle = 0x0013, uuid = 0000ffe9-0000-1000-8000-00805f9b34fb
+handle = 0x0016, char properties = 0x0a, char value handle = 0x0017, uuid = 0000fff1-0000-1000-8000-00805f9b34fb
+handle = 0x0019, char properties = 0x08, char value handle = 0x001a, uuid = 0000fff2-0000-1000-8000-00805f9b34fb
+handle = 0x001c, char properties = 0x12, char value handle = 0x001d, uuid = 0000fff3-0000-1000-8000-00805f9b34fb
+handle = 0x0020, char properties = 0x0a, char value handle = 0x0021, uuid = 0000fff4-0000-1000-8000-00805f9b34fb
+handle = 0x0023, char properties = 0x0a, char value handle = 0x0024, uuid = 0000fff5-0000-1000-8000-00805f9b34fb
+handle = 0x0026, char properties = 0x0a, char value handle = 0x0027, uuid = 0000fff6-0000-1000-8000-00805f9b34fb
+handle = 0x0029, char properties = 0x0a, char value handle = 0x002a, uuid = 0000fff7-0000-1000-8000-00805f9b34fb
+handle = 0x002c, char properties = 0x12, char value handle = 0x002d, uuid = 0000fff8-0000-1000-8000-00805f9b34fb
+handle = 0x0030, char properties = 0x12, char value handle = 0x0031, uuid = 0000fff9-0000-1000-8000-00805f9b34fb
+handle = 0x0035, char properties = 0x0a, char value handle = 0x0036, uuid = 0000ffd1-0000-1000-8000-00805f9b34fb
+handle = 0x0038, char properties = 0x0a, char value handle = 0x0039, uuid = 0000ffd2-0000-1000-8000-00805f9b34fb
+handle = 0x003b, char properties = 0x12, char value handle = 0x003c, uuid = 0000ffd3-0000-1000-8000-00805f9b34fb
+handle = 0x003f, char properties = 0x12, char value handle = 0x0040, uuid = 0000ffd4-0000-1000-8000-00805f9b34fb
+handle = 0x0044, char properties = 0x08, char value handle = 0x0045, uuid = 0000ffc1-0000-1000-8000-00805f9b34fb
+handle = 0x0047, char properties = 0x10, char value handle = 0x0048, uuid = 0000ffc2-0000-1000-8000-00805f9b34fb
+handle = 0x004c, char properties = 0x0a, char value handle = 0x004d, uuid = 0000ffb1-0000-1000-8000-00805f9b34fb
+handle = 0x004f, char properties = 0x0a, char value handle = 0x0050, uuid = 0000ffb2-0000-1000-8000-00805f9b34fb
+handle = 0x0052, char properties = 0x0a, char value handle = 0x0053, uuid = 0000ffb3-0000-1000-8000-00805f9b34fb
+handle = 0x0055, char properties = 0x0a, char value handle = 0x0056, uuid = 0000ffb4-0000-1000-8000-00805f9b34fb
+handle = 0x0059, char properties = 0x0a, char value handle = 0x005a, uuid = 0000ffa2-0000-1000-8000-00805f9b34fb
+handle = 0x005c, char properties = 0x12, char value handle = 0x005d, uuid = 0000ffa1-0000-1000-8000-00805f9b34fb
+handle = 0x0061, char properties = 0x0a, char value handle = 0x0062, uuid = 0000ff91-0000-1000-8000-00805f9b34fb
+handle = 0x0064, char properties = 0x0a, char value handle = 0x0065, uuid = 0000ff92-0000-1000-8000-00805f9b34fb
+handle = 0x0067, char properties = 0x0a, char value handle = 0x0068, uuid = 0000ff93-0000-1000-8000-00805f9b34fb
+handle = 0x006a, char properties = 0x08, char value handle = 0x006b, uuid = 0000ff94-0000-1000-8000-00805f9b34fb
+handle = 0x006d, char properties = 0x0a, char value handle = 0x006e, uuid = 0000ff95-0000-1000-8000-00805f9b34fb
+handle = 0x0070, char properties = 0x0a, char value handle = 0x0071, uuid = 0000ff96-0000-1000-8000-00805f9b34fb
+handle = 0x0073, char properties = 0x0a, char value handle = 0x0074, uuid = 0000ff97-0000-1000-8000-00805f9b34fb
+handle = 0x0076, char properties = 0x0a, char value handle = 0x0077, uuid = 0000ff98-0000-1000-8000-00805f9b34fb
+handle = 0x0079, char properties = 0x08, char value handle = 0x007a, uuid = 0000ff99-0000-1000-8000-00805f9b34fb
+handle = 0x007c, char properties = 0x0a, char value handle = 0x007d, uuid = 0000ff9a-0000-1000-8000-00805f9b34fb
+handle = 0x0080, char properties = 0x0a, char value handle = 0x0081, uuid = 0000fc64-0000-1000-8000-00805f9b34fb
+handle = 0x0085, char properties = 0x0a, char value handle = 0x0086, uuid = 0000fe01-0000-1000-8000-00805f9b34fb
+handle = 0x0088, char properties = 0x0a, char value handle = 0x0089, uuid = 0000fe02-0000-1000-8000-00805f9b34fb
+handle = 0x008b, char properties = 0x0a, char value handle = 0x008c, uuid = 0000fe03-0000-1000-8000-00805f9b34fb
+handle = 0x008e, char properties = 0x0a, char value handle = 0x008f, uuid = 0000fe04-0000-1000-8000-00805f9b34fb
+handle = 0x0091, char properties = 0x0a, char value handle = 0x0092, uuid = 0000fe05-0000-1000-8000-00805f9b34fb
+handle = 0x0094, char properties = 0x0a, char value handle = 0x0095, uuid = 0000fe06-0000-1000-8000-00805f9b34fb
+
+
+var MIPReceiveDataService = "ffe0",
+attr handle = 0x000c, end grp handle = 0x0010 uuid: 0000ffe0-0000-1000-8000-00805f9b34fb
+    MIPReceiveDataNotify = "ffe4",
+handle = 0x000d, char properties = 0x10, char value handle = 0x000e, uuid = 0000ffe4-0000-1000-8000-00805f9b34fb
+
+Primary:
+    MIPSendDataService = "ffe5",
+attr handle = 0x0011, end grp handle = 0x0014 uuid: 0000ffe5-0000-1000-8000-00805f9b34fb
+    MIPSendDataWrite = "ffe9";
+handle = 0x0012, char properties = 0x0c, char value handle = 0x0013, uuid = 0000ffe9-0000-1000-8000-00805f9b34fb
+
+set volume:
+char-write-cmd 13 1501
+get volume:
+char-write-cmd 13 16
+Notification handle = 0x000e value: 37 39 36 35 30 30
+
+https://stackoverflow.com/questions/15657007/bluetooth-low-energy-listening-for-notifications-indications-in-linux
+sudo gatttool -i hci1 -b D0:39:72:B7:AF:66 --char-write -a 0x0013 -n 1501
+sudo gatttool -i hci1 -b D0:39:72:B7:AF:66 --char-write -a 0x0013 -n 16 --listen
+sudo gatttool -i hci1 -b D0:39:72:B7:AF:66 --char-read -a 0x000e
