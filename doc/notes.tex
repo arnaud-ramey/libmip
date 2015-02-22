@@ -18,6 +18,7 @@
 }
 
 \newcommand{\link}[1] {\href{#1}{#1}}
+\setlength{\parskip}{5 mm}
 
 %opening
 \title{WoWWee MiP}
@@ -161,7 +162,7 @@ char-write-cmd <handle> value
 > char-read-hnd 0x83
 \end{lstlisting}
 
-Get firmware:
+Get firmware version:
 \begin{lstlisting}[language=bash]
 > char-write-cmd 0x0013 14
 Notification handle = 0x000e value: 31 34 30 45 30 33 31 36 30 32
@@ -171,6 +172,13 @@ Translating thanks to
 \begin{lstlisting}[language=bash]
 31 34 30 45 30 33 31 36 30 32 > 140E031602
 \end{lstlisting}
+Now parse each pair of consecutive chars : 
+it is a int written in hex format, convert into decimal format:
+\begin{lstlisting}[language=bash]
+14:20 0E:14 03:03 16:22 02:02
+\end{lstlisting}
+The first int corresponds to the calling code: here $0x14$ for the firmware version.
+
 
 Non interactive:
 \link{http://www.humbug.in/2014/using-gatttool-manualnon-interactive-mode-read-ble-devices/} 

@@ -2,8 +2,8 @@
 
 int main(int argc, char **argv) {
   Mip mip;
-  //mip.set_device_by_name("hci0");
-  mip.set_device_by_bd_address("00:1A:7D:DA:71:11");
+  //mip.set_bluetooth_device_by_name("hci0");
+  mip.set_bluetooth_device_by_mac("00:1A:7D:DA:71:11");
   mip.connect("D0:39:72:B7:AF:66");
   printf("volume:%i\n", mip.get_volume());
   printf("version:'%s'\n", mip.get_version().c_str());

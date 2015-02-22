@@ -73,8 +73,8 @@ public:
 
   //////////////////////////////////////////////////////////////////////////////
 
-  bool set_device_by_name(const std::string & device) {
-    printf("Mip::set_device_by_name(device:'%s')\n", device.c_str());
+  bool set_bluetooth_device_by_name(const std::string & device) {
+    printf("Mip::set_bluetooth_device_by_name(device:'%s')\n", device.c_str());
     _hci_device = device;
     // sudo hciconfig hci1 up
     std::ostringstream order;
@@ -84,8 +84,8 @@ public:
 
   //////////////////////////////////////////////////////////////////////////////
 
-  bool set_device_by_bd_address(const std::string & address) {
-    printf("Mip::set_device_by_bd_address('%s')\n", address.c_str());
+  bool set_bluetooth_device_by_mac(const std::string & address) {
+    printf("Mip::set_bluetooth_device_by_mac('%s')\n", address.c_str());
     std::string result = exec_system_get_output("hciconfig");
     StringUtils::find_and_replace(result, "\n", " ");
     StringUtils::find_and_replace(result, "\t", " ");
@@ -101,12 +101,12 @@ public:
     }
     while (it >= words.begin()) {
       if (it->size() > 3 && it->substr(0, 3) == "hci")
-        return set_device_by_name(it->substr(0, 4));
+        return set_bluetooth_device_by_name(it->substr(0, 4));
       --it;
     }
     printf("Mip: Device with address'%s' has no 'hci' name!\n", address.c_str());
     return false;
-  } // end set_device_by_bd_address()
+  } // end set_bluetooth_device_by_mac()
 
   //////////////////////////////////////////////////////////////////////////////
 

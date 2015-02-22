@@ -15,7 +15,7 @@ add_library(libgatt
   libgatt/src/hci.c
   libgatt/src/sdp.c
   libgatt/src/bluetooth.c
-  libgatt/src/utils.c
+  #libgatt/src/utils.c
 )
 
 add_executable(libgatttest libgatt/src/test.c)
