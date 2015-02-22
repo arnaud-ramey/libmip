@@ -91,7 +91,6 @@ enum MipCommand {
 static const int ERROR = -100;
 
 typedef int GameMode;
-static const GameMode UNKNOWN = -1;
 static const GameMode APP = 1;
 static const GameMode CAGE = 2;
 static const GameMode TRACKING = 3;
@@ -111,9 +110,9 @@ inline static const char* game_mode2str(const GameMode mode) {
     case STACK:  return "STACK";
     case TRICK_PROGRAMMING_AND_PLAYBACK:  return "TRICK_PROGRAMMING_AND_PLAYBACK";
     case ROAM_MODE:  return "ROAM_MODE";
-    case UNKNOWN:
+    case ERROR:
     default:
-      return "UNKNOWN";
+      return "ERROR";
   }
 } // end game_mode2str()
 

@@ -21,5 +21,5 @@ add_library(libgatt
 add_executable(libgatttest libgatt/src/test.c)
 target_link_libraries(libgatttest libgatt ${GLIB_LIBRARIES})
 
-add_executable(gattmip gattmip.cpp)
+add_executable(gattmip gattmip.cpp mipcommands.h)
 target_link_libraries(gattmip libgatt ${GLIB_LIBRARIES})

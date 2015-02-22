@@ -45,11 +45,23 @@ extern "C" {
 
 class GATTMip {
 public:
+  //! a minimalistic data structure for chest led info
+  struct ChestLed { int r, g, b, flashing1, flashing2; };
+
   GATTMip() {
     // free possibly busy bluetooth devices
     system("rfkill unblock all");
     _handle_read = 0x000e;
     _handle_write = 0x13;
+    // default values
+    _volume = ERROR;
+    _game_mode = ERROR;
+    _battery_voltage = ERROR;
+    _status = ERROR;
+    _weight = ERROR;
+    _version = ERROR;
+    _chest_led.r = _chest_led.g = _chest_led.b = ERROR;
+    _chest_led.flashing1 = _chest_led.flashing2 = ERROR;
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -178,69 +190,40 @@ public:
 
   //////////////////////////////////////////////////////////////////////////////
 
+  inline bool request_game_mode() { return send_order0(0x82); }
   //! \see GameMode enum
-  inline GameMode request_game_mode() {
-    return send_order0(0x82);
-  }
-
+  inline GameMode get_game_mode() { return _game_mode; }
   //! \see GameMode enum
-  inline const char* request_game_mode2str() {
-    return game_mode2str(request_game_mode());
+  inline const char* get_game_mode2str() {
+    return game_mode2str(get_game_mode());
   }
 
   //////////////////////////////////////////////////////////////////////////////
 
+  inline bool request_battery_voltage() { return send_order0(0x79); }
   //! between 4.0V and 6.4V, or < 0 if error
-  inline double request_battery_voltage() {
-    int voltage_int, status;
-    if (!send_order2(0x79, voltage_int, status))
-      return ERROR;
-    // 0x4D = 77 = 4.0V, 0x7C = 124 = 6.4V
-    return 4.0 + (voltage_int-77)*2.4/47;
-  }
-
+  inline float get_battery_voltage() { return _battery_voltage; }
   //! in 0-100, or -1 if error
-  inline int request_battery_percentage() {
-    double voltage = request_battery_voltage();
+  inline int get_battery_percentage() {
+    double voltage = get_battery_voltage();
     return (voltage < 0 ? ERROR : (voltage-4.0) / 2.4 * 100);
   }
 
   //////////////////////////////////////////////////////////////////////////////
 
+  inline bool request_status() { return send_order0(0x79); }
   //! \see Status enum
-  inline Status request_status() {
-    int voltage_int, status;
-    return (send_order2(0x79, voltage_int, status) ? status : ERROR);
-  }
+  inline Status get_status() { return _status; }
 
   //////////////////////////////////////////////////////////////////////////////
 
-  inline bool request_up() {
-    return send_order1(0x23, 2);
-  }
+  inline bool request_up() { return send_order1(0x23, 2); }
 
   //////////////////////////////////////////////////////////////////////////////
 
   //! \return angle with vertical, in [-45, 45], or -1 if ERROR.
-  inline int request_weight_update() {
-    int weight_int = send_order0(0x81);
-    if (weight_int == ERROR)
-      return ERROR;
-    // 0xD3 = 211 = (-­45 degree) ~­ 0x2D = 45 = (+45 degree)
-    // 0xD3 = 211 (max) ~ 0xFF = 255 (min) is holding the weight on the front
-    // 0x00 = 0 (min) ~ 0x2D = 45 (max) is holding the weight on the back
-    // in other words:0 -> 0, 45 -> 45, 255 -> -1, 211 -> -45
-    return (weight_int < 100 ? weight_int : 256 - weight_int);
-  }
-
-  //////////////////////////////////////////////////////////////////////////////
-
-  //! \return r,g,b in [0, 255]
-  inline bool request_chest_LED(int & r, int & g, int & b, int & flashing1, int & flashing2) {
-    if (!send_order5(0x83, r, g, b, flashing1, flashing2))
-      return false;
-    return true;
-  }
+  inline bool request_weight_update() { send_order0(0x81); }
+  inline int get_weight_update() { return _weight; }
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -261,24 +244,21 @@ public:
 
   //////////////////////////////////////////////////////////////////////////////
 
-  inline bool request_software_version() { return send_order0(CMD_MIP_SOFTWARE_VERSION); }
-
-  //! "YYYY/MM/DD-NN" where NN is the day's number version
-  inline std::string request_version() {
-    int year, month, day, number;
-    if (!send_order4(0x14, year, month, day, number))
-      return "";
-    std::ostringstream ans;
-    ans << "20" << std::setw(2) << std::setfill('0') << year
-        << "/"  << std::setw(2) << std::setfill('0') << month
-        << "/"  << std::setw(2) << std::setfill('0') << day
-        << "-"  << std::setw(2) << std::setfill('0') << number;
-    return ans.str();
-  }
+  inline bool request_chest_LED() { return send_order0(0x83); }
+  //! \return r,g,b in [0, 255]
+  inline ChestLed get_chest_LED() { return _chest_led; }
 
   //////////////////////////////////////////////////////////////////////////////
 
-  //! \arg vol 0~9
+  inline bool request_software_version() {
+    return send_order0(CMD_MIP_SOFTWARE_VERSION);
+  }
+  //! "YYYY/MM/DD-NN" where NN is the day's number version
+  inline std::string get_software_version() { return _version; }
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  //! \arg vol 0~7
   inline bool set_volume(uint vol) {
     return send_order1(0x06, 247 + clamp(vol, 0, 7) ); // 0xF7­~0xFE for volume
   }
@@ -293,13 +273,46 @@ protected:
 
   unsigned int _volume;
   GameMode _game_mode;
+  float _battery_voltage;
+  Status _status;
+  int _weight;
+  std::string _version;
+  ChestLed _chest_led;
 
   //////////////////////////////////////////////////////////////////////////////
 
   //! store notification result in GATTMip class fields
   inline void store_results(unsigned int cmd, const std::vector<int> & values) {
     unsigned int nvalues = values.size();
-    if (cmd == CMD_MIP_VOLUME && nvalues == 1)
+    if (cmd == CMD_GET_CURRENT_MIP_GAME_MODE && nvalues == 1)
+      _game_mode = values[0];
+    else if (cmd == CMD_MIP_STATUS && nvalues == 2) {
+      // 0x4D = 77 = 4.0V, 0x7C = 124 = 6.4V
+      _battery_voltage = 4.0 + (values[0]-77)*2.4/47;
+      _status = values[1];
+    }
+    else if (cmd == CMD_REQUEST_WEIGHT_UPDATE && nvalues == 1)
+      // 0xD3 = 211 = (-­45 degree) ~­ 0x2D = 45 = (+45 degree)
+      // 0xD3 = 211 (max) ~ 0xFF = 255 (min) is holding the weight on the front
+      // 0x00 = 0 (min) ~ 0x2D = 45 (max) is holding the weight on the back
+      // in other words:0 -> 0, 45 -> 45, 255 -> -1, 211 -> -45
+      _weight = (values[0] < 100 ? values[0] : 256 - values[0]);
+    else if (cmd == CMD_MIP_SOFTWARE_VERSION && nvalues == 5) {
+      _chest_led.r = values[0];
+      _chest_led.g = values[1];
+      _chest_led.b = values[2];
+      _chest_led.flashing1 = values[3];
+      _chest_led.flashing2 = values[4];
+    }
+    else if (cmd == CMD_MIP_SOFTWARE_VERSION && nvalues == 4) {
+      std::ostringstream vstr;
+      vstr << "20" << std::setw(2) << std::setfill('0') << values[0] // year
+           << "/"  << std::setw(2) << std::setfill('0') << values[1] // month
+           << "/"  << std::setw(2) << std::setfill('0') << values[2] // day
+           << "-"  << std::setw(2) << std::setfill('0') << values[3]; // version
+      _version = vstr.str();
+    }
+    else if (cmd == CMD_MIP_VOLUME && nvalues == 1)
       _volume = values[0];
   }
 
