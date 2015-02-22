@@ -31,7 +31,7 @@ The MIP library.
 #include <algorithm>
 #include <iomanip>      // std::setfill, std::setw
 #include <unistd.h>
-#include <math.h>
+#include <math.h> // fabs
 #include <assert.h>
 
 //#define DEBUG_PRINT(...)   {}

@@ -29,19 +29,22 @@ extern "C" {
 }
 #include <unistd.h>
 #include <stdlib.h>
+#include <math.h> // fabs
 // C++
 #include <sstream>
 #include <vector>
 #include <iomanip>      // std::setfill, std::setw
 
+
+#include "mipcommands.h"
+
+//#define DEBUG_PRINT(...)   {}
+#define DEBUG_PRINT(...)   printf(__VA_ARGS__)
+#define RAD2DEG 0.01745329251994329577
+#define DEG2RAD 57.2957795130823208768
+
 class GATTMip {
 public:
-  enum CommandCode {
-    CMD_SOUND = 0x06,
-    CMD_VERSION = 0x14,
-    CMD_VOLUME = 0x16
-  };
-
   GATTMip() {
     // free possibly busy bluetooth devices
     system("rfkill unblock all");
@@ -83,19 +86,222 @@ public:
   inline bool play_sound(uint sound_idx) {
     printf("play_sound(%i)\n", sound_idx);
     // sudo gatttool -­i hci1 ­-b D0:39:72:B7:AF:66 --char­-write­ -a 0x0013 -n 0602
-    return send_order1(CMD_SOUND, clamp(sound_idx, 1, 106));
+    return send_order1(CMD_PLAY_SOUND, clamp(sound_idx, 1, 106));
   }
 
   //////////////////////////////////////////////////////////////////////////////
 
-  inline bool     request_volume() { return send_order0(CMD_VOLUME); }
-  inline unsigned int get_volume() { return _volume; }
+  //! \arg distance_m in meters, no speed control
+  inline bool distance_drive(double distance_m,
+                             double angle_rad) {
+    bool backward = (distance_m < 0);
+    int angle_deg = rad2deg_norm(angle_rad, -360, 360);
+    bool ccw = (angle_deg < 0);
+    int distance_cm = clamp(fabs(distance_m*100.), 0, 255);
+    printf("distance_cm:%i\n", distance_cm);
+    // BYTE 1 : Forward: 0X00 or Backward: 0X01
+    // BYTE 2 : Distance (cm): 0x00­0xFF
+    // BYTE 3 : Turn Clockwise: 0X00 or Anti­-clockwise: 0X01
+    // BYTE 4 : Turn Angle(High byte): 0x00~0x01
+    // BYTE 5 : Turn Angle(Low byte): 0x00~0xFF
+    return send_order5(CMD_DISTANCE_DRIVE, backward, distance_cm,
+                       ccw, angle_deg/256, angle_deg%256);
+  }
 
   //////////////////////////////////////////////////////////////////////////////
 
-  inline bool request_version() { return send_order0(CMD_VERSION); }
+  /*! \arg speed in 0~30 (-30~0 to go backwards)
+   *  \arg time_s in seconds */
+  inline bool time_drive(double speed, double time_s) {
+    int time_7ms = clamp(time_s * 1000/7, 0, 255);
+    if (speed > 0)
+      return send_order2(CMD_DRIVE_FORWARD_WITH_TIME,
+                         clamp(speed, 0, 30), time_7ms);
+    return send_order2(CMD_DRIVE_BACKWARD_WITH_TIME,
+                       clamp(-speed, 0, 30), time_7ms);
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  /*! \arg speed in 0~24 (-24~0 to go backwards)
+   *  \arg angle_rad in radians, > 0 for CCW, < 0 for CW */
+  inline bool angle_drive(double speed, double angle_rad) {
+    // BYTE 1 : Angle in intervals of 5 degrees (0~255) - Angle = Byte1 Value * 5
+    int angle_deg = rad2deg_norm(angle_rad, -1275, 1275);
+    if (angle_deg < 0) // CCW
+      return send_order2(0x73, clamp(speed, 0, 24), fabs(angle_deg/5));
+    return send_order2(0x74, clamp(-speed, 0, 24), fabs(angle_deg/5));
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  /*! \arg speed in 1~64 (-64~1 to go backwards)  */
+  inline bool continuous_drive_linear(double speed) {
+    speed = clamp(speed, -64, 64);
+    if (speed > 32) // 33 ~ 64 => crazy Fw:0x81(slow)~­0xA0(fast) = 129 ~ 160
+      return send_order1(0x78, 96 + speed);
+    if (speed > 0) // 1 ~ 32 => Fw:0x01(slow)~­0x20(fast)
+      return send_order1(0x78, speed);
+    if (speed > -32) // -1 ~ -32 => Bw:0x21(slow)~0x40(fast) = 33 ~ 64
+      return send_order1(0x78, 32 - speed);
+    // -33 -> -64 => crazy Bw:0xA1(slow)~0xC0(fast) = 161 ~ 192
+    return send_order1(0x78, 128 - speed);
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  /*! \arg speed in 0~64 to turn CCW (-64~0 to turn CW)  */
+  inline bool continuous_drive_angular(double speed) {
+    speed = clamp(speed, -64, 63);
+    if (speed > 32) // 33 ~ 64 => crazy Left spin:0xE1(slow)~0xFF(fast) = 225 - 255
+      return send_order1(0x78, 192 + speed);
+    if (speed > 0) // 1 ~ 32 => Left spin:0x61(slow)~0x80(fast) = 97 ~ 128
+      return send_order1(0x78, 96 + speed);
+    if (speed > -32) // -1 ~ -32 => right spin:0x41(slow)~0x60(fast) = 65 ~ 96
+      return send_order1(0x78, 64 - speed);
+    // -33 -> -64 => crazy right spin:0xC1(slow)~0xE0(fast) = 193 ~ 224
+    return send_order1(0x78, 160 - speed);
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  inline bool stop() {
+    return send_order0(0x77);
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  //! \see GameMode enum
+  inline bool set_game_mode(const GameMode & mode) {
+    return send_order1(0x82, mode);
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  //! \see GameMode enum
+  inline GameMode request_game_mode() {
+    return send_order0(0x82);
+  }
+
+  //! \see GameMode enum
+  inline const char* request_game_mode2str() {
+    return game_mode2str(request_game_mode());
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  //! between 4.0V and 6.4V, or < 0 if error
+  inline double request_battery_voltage() {
+    int voltage_int, status;
+    if (!send_order2(0x79, voltage_int, status))
+      return ERROR;
+    // 0x4D = 77 = 4.0V, 0x7C = 124 = 6.4V
+    return 4.0 + (voltage_int-77)*2.4/47;
+  }
+
+  //! in 0-100, or -1 if error
+  inline int request_battery_percentage() {
+    double voltage = request_battery_voltage();
+    return (voltage < 0 ? ERROR : (voltage-4.0) / 2.4 * 100);
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  //! \see Status enum
+  inline Status request_status() {
+    int voltage_int, status;
+    return (send_order2(0x79, voltage_int, status) ? status : ERROR);
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  inline bool request_up() {
+    return send_order1(0x23, 2);
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  //! \return angle with vertical, in [-45, 45], or -1 if ERROR.
+  inline int request_weight_update() {
+    int weight_int = send_order0(0x81);
+    if (weight_int == ERROR)
+      return ERROR;
+    // 0xD3 = 211 = (-­45 degree) ~­ 0x2D = 45 = (+45 degree)
+    // 0xD3 = 211 (max) ~ 0xFF = 255 (min) is holding the weight on the front
+    // 0x00 = 0 (min) ~ 0x2D = 45 (max) is holding the weight on the back
+    // in other words:0 -> 0, 45 -> 45, 255 -> -1, 211 -> -45
+    return (weight_int < 100 ? weight_int : 256 - weight_int);
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  //! \return r,g,b in [0, 255]
+  inline bool request_chest_LED(int & r, int & g, int & b, int & flashing1, int & flashing2) {
+    if (!send_order5(0x83, r, g, b, flashing1, flashing2))
+      return false;
+    return true;
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  //! r,g,b in [0, 255]
+  inline bool set_chest_LED(const int & r, const int & g, const int & b) {
+    return send_order3(0x84, r, g, b);
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  //! r,g,b in [0, 255],
+  inline bool set_chest_LED(const int & r, const int & g, const int & b,
+                            const double & time_flash_on_sec, const double & time_flash_off_sec) {
+    int ton = clamp( (int) (time_flash_on_sec * 500), 1, 255);
+    int toff = clamp( (int) (time_flash_off_sec * 500), 1, 255);
+    return send_order5(0x89, r, g, b, ton, toff);
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  inline bool request_software_version() { return send_order0(CMD_MIP_SOFTWARE_VERSION); }
+
+  //! "YYYY/MM/DD-NN" where NN is the day's number version
+  inline std::string request_version() {
+    int year, month, day, number;
+    if (!send_order4(0x14, year, month, day, number))
+      return "";
+    std::ostringstream ans;
+    ans << "20" << std::setw(2) << std::setfill('0') << year
+        << "/"  << std::setw(2) << std::setfill('0') << month
+        << "/"  << std::setw(2) << std::setfill('0') << day
+        << "-"  << std::setw(2) << std::setfill('0') << number;
+    return ans.str();
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  //! \arg vol 0~9
+  inline bool set_volume(uint vol) {
+    return send_order1(0x06, 247 + clamp(vol, 0, 7) ); // 0xF7­~0xFE for volume
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  inline bool     request_volume() { return send_order0(CMD_MIP_VOLUME); }
+  //! in 0-7
+  inline unsigned int get_volume() { return _volume; }
 
 protected:
+
+  unsigned int _volume;
+  GameMode _game_mode;
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  //! store notification result in GATTMip class fields
+  inline void store_results(unsigned int cmd, const std::vector<int> & values) {
+    unsigned int nvalues = values.size();
+    if (cmd == CMD_MIP_VOLUME && nvalues == 1)
+      _volume = values[0];
+  }
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -110,13 +316,35 @@ protected:
     uint8_t value_arr[1] = {cmd};
     return send_order(value_arr, 1);
   }
-
-  //////////////////////////////////////////////////////////////////////////////
-
   inline bool send_order1(uint8_t cmd, uint8_t param1) {
     printf("send_order1(0x%02x, params:0x%02x)\n", cmd, param1);
     uint8_t value_arr[2] = {cmd, param1};
     return send_order(value_arr, 2);
+  }
+  inline bool send_order2(uint8_t cmd, uint8_t param1, uint8_t param2) {
+    printf("send_order2(0x%02x, params:0x%02x, 0x%02x)\n", cmd, param1, param2);
+    uint8_t value_arr[3] = {cmd, param1, param2};
+    return send_order(value_arr, 3);
+  }
+  inline bool send_order3(uint8_t cmd, uint8_t param1, uint8_t param2, uint8_t param3) {
+    printf("send_order3(0x%02x, params:0x%02x, 0x%02x, 0x%02x)\n", cmd,
+           param1, param2, param3);
+    uint8_t value_arr[4] = {cmd, param1, param2, param3};
+    return send_order(value_arr, 4);
+  }
+  inline bool send_order4(uint8_t cmd, uint8_t param1, uint8_t param2,
+                          uint8_t param3, uint8_t param4) {
+    printf("send_order4(0x%02x, params:0x%02x, 0x%02x, 0x%02x, 0x%02x)\n", cmd,
+           param1, param2, param3, param4);
+    uint8_t value_arr[5] = {cmd, param1, param2, param3};
+    return send_order(value_arr, 5);
+  }
+  inline bool send_order5(uint8_t cmd, uint8_t param1, uint8_t param2,
+                          uint8_t param3, uint8_t param4, uint8_t param5) {
+    printf("send_order5(0x%02x, params:0x%02x, 0x%02x, 0x%02x, 0x%02x, 0x%02x)\n", cmd,
+           param1, param2, param3, param4, param5);
+    uint8_t value_arr[6] = {cmd, param1, param2, param3};
+    return send_order(value_arr, 6);
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -142,6 +370,17 @@ protected:
     std::ostringstream ans;
     ans << std::setw(ndigits) << std::setfill('0') << std::hex << i1;
     return ans.str();
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  static const inline uint rad2deg_norm(const double & angle_rad,
+                                        const double angle_min = 0,
+                                        const double angle_max = 360) {
+    int angle_deg = angle_rad * RAD2DEG;
+    while (angle_deg < angle_min)    angle_deg+=360;
+    while (angle_deg >= angle_max) angle_deg-=360;
+    return angle_deg;
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -195,15 +434,6 @@ protected:
 
   //////////////////////////////////////////////////////////////////////////////
 
-  //! store notification result in GATTMip class fields
-  inline void store_results(unsigned int cmd, const std::vector<int> & values) {
-    unsigned int nvalues = values.size();
-    if (cmd == CMD_VOLUME && nvalues == 1)
-      _volume = values[0];
-  }
-
-  //////////////////////////////////////////////////////////////////////////////
-
   static void connect_cb(GIOChannel *io, GError *err, gpointer user_data) {
     printf("connect_cb()\n");
     if (err) {
@@ -222,25 +452,6 @@ protected:
     g_attrib_register(this_->_attrib, ATT_OP_HANDLE_IND,
                       this_->_handle_read,
                       GATTMip::events_handler, this_, GATTMip::notify_cb);
-
-    // get volume
-    uint8_t value1[1];
-    value1[0] = 0x16;
-    // GAttrib *attrib, uint16_t handle, uint8_t *value, int vlen,
-    // GDestroyNotify notify, gpointer user_data
-    gatt_write_cmd(this_->_attrib, this_->_handle_write, value1, 1,
-                   GATTMip::notify_cb, this_);
-
-    // get version
-    value1[0]= 0x14;
-    gatt_write_cmd(this_->_attrib, this_->_handle_write, value1, 1,
-                   GATTMip::notify_cb, this_);
-
-    // play some sound
-    uint8_t value2[2] = {0x6, 0x10};
-    gatt_write_cmd(this_->_attrib, this_->_handle_write, value2, 2,
-                   GATTMip::notify_cb, this_);
-    printf("end of connect_cb()\n");
   } // end connect_cb();
 
   //////////////////////////////////////////////////////////////////////////////
@@ -248,7 +459,6 @@ protected:
 
   GAttrib *_attrib;
   int _handle_read, _handle_write;
-  unsigned int _volume;
 }; // end class GATTMip
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -259,7 +469,10 @@ int main(int argc, char **argv) {
   // sudo gatttool -­i hci1 ­-b D0:39:72:B7:AF:66 --char­-write­ -a 0x0013 -n 0602
   GATTMip mip;
   // hci MAC "00:1A:7D:DA:71:11, check- with hciconfig
-  mip.connect("hci0", "D0:39:72:B7:AF:66");
+  mip.connect(
+        //"hci0",
+        "hci1",
+        "D0:39:72:B7:AF:66");
 
   // pump up the callbacks!
   GMainLoop *event_loop;
@@ -278,9 +491,9 @@ int main(int argc, char **argv) {
     if (rand()%2)
       mip.request_volume();
     else
-      mip.request_version();
+      mip.request_software_version();
     //    mip.play_sound(sound_idx); ++sound_idx;
-    printf("volume:%i\n", mip.get_volume());
+    printf("volume:%i\n", mip.request_volume());
 
     // https://stackoverflow.com/questions/23737750/glib-usage-without-mainloop
     printf("g_main_context_iteration()\n");
