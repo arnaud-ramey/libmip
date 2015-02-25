@@ -87,7 +87,8 @@ public:
 
   Mip() {
     // free possibly busy bluetooth devices
-    system("rfkill unblock all");
+    if (system("rfkill unblock all"))
+      printf("Could not free possibly busy bluetooth devices! Keep fingers crossed\n");
     _handle_read = 0x000e;
     _handle_write = 0x13;
     // default values
@@ -112,7 +113,7 @@ public:
   /*! Connect with a given Bluetooth Low Energy (BTLE) device
    *  to a MiP robot, identified by its MAC.
    * \example connect("hci0", "D0:39:72:B7:AF:66")
-   * \param src
+   * \param device_name
    *  The Bluetooth Low Energy (BTLE) device name.
    *  This parameter corresponds to gatttool parameter -i :
    *    "Specify local adapter interface", "hciX"
@@ -125,7 +126,7 @@ public:
    *
    *  If you want to use a device thanks to its MAC instead of its device name,
    *    use bluetooth_mac2device()
-   * \param dst
+   * \param mic_mac
    *  The MiP mac address.
    *  This parameter corresponds to gatttool parameter -b :
    *    "Specify remote Bluetooth address", "MAC"
@@ -134,20 +135,20 @@ public:
    *  where hciX is your Bluetooth Low Energy (BTLE) device
    *  \return true if the connection was a success
    */
-  bool connect(const char* src, const char* dst) {
+  bool connect(const char* device_name, const char* mip_mac) {
     // -t : "Set LE address type. Default: public", "[public | random]"
     const char *dst_type = "public",
         // -l : "Set security level. Default: low", "[low | medium | high]"
         *sec_level = "low";
     GError* error = NULL;
-    GIOChannel* iochannel = gatt_connect(src, dst, dst_type, sec_level, 0, 0,
+    GIOChannel* iochannel = gatt_connect(device_name, mip_mac, dst_type, sec_level, 0, 0,
                                          Mip::connect_cb, this, &error);
     if (iochannel == NULL) {
       printf("Error in gatt_connect('%s'->'%s'): '%s'\n",
-             src, dst, error->message);
+             device_name, mip_mac, error->message);
       return false;
     }
-    DEBUG_PRINT("gatt_connect('%s'->'%s') succesful\n", src, dst);
+    DEBUG_PRINT("gatt_connect('%s'->'%s') succesful\n", device_name, mip_mac);
     return true;
   }
 

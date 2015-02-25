@@ -28,9 +28,11 @@ int main(int argc, char **argv) {
   printf("main()\n");
   // sudo gatttool -­i hci1 ­-b D0:39:72:B7:AF:66 --char­-write­ -a 0x0013 -n 0602
   Mip mip;
-  // hci MAC "00:1A:7D:DA:71:11, check- with hciconfig
-  mip.connect(bluetooth_mac2device("00:1A:7D:DA:71:11").c_str(),
-              "D0:39:72:B7:AF:66");
+  if (!mip.connect(bluetooth_mac2device("00:1A:7D:DA:71:11").c_str(),
+              "D0:39:72:B7:AF:66")) {
+    printf("Could not connect to MIP!\n");
+    return -1;
+  }
 
   // pump up the callbacks!
   GMainLoop *event_loop;

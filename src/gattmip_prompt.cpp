@@ -80,8 +80,11 @@ int main(int argc, char** argv) {
     return -1;
   }
   Mip mip;
-  mip.connect(bluetooth_mac2device("00:1A:7D:DA:71:11").c_str(),
-              "D0:39:72:B7:AF:66");
+  if (!mip.connect(bluetooth_mac2device("00:1A:7D:DA:71:11").c_str(),
+              "D0:39:72:B7:AF:66")) {
+    printf("Could not connect to MIP!\n");
+    return -1;
+  }
   pump_up_callbacks();
 
   std::string choice = argv[1];

@@ -44,8 +44,11 @@ int main(int argc, char** argv) {
     return -1;
   }
   Mip mip;
-  mip.connect(bluetooth_mac2device("00:1A:7D:DA:71:11").c_str(),
-              "D0:39:72:B7:AF:66");
+  if (!mip.connect(bluetooth_mac2device("00:1A:7D:DA:71:11").c_str(),
+              "D0:39:72:B7:AF:66")) {
+    printf("Could not connect to MIP!\n");
+    return -1;
+  }
   std::string choice = argv[1];
   double param1 = (argc >= 3 ? atof(argv[2]) : -1);
   double param2 = (argc >= 4 ? atof(argv[3]) : -1);
