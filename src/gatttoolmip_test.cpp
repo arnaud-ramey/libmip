@@ -1,6 +1,6 @@
 
+#include "gatttoolmip.h"
 #include "bluetooth_mac2device.h"
-#include "mip.h"
 
 int main(int argc, char **argv) {
   Mip mip;

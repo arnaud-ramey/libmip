@@ -23,7 +23,7 @@ ________________________________________________________________________________
 A standalone prompt to test the MIP library.
  */
 
-#include "mip.h"
+#include "gatttoolmip.h"
 #include "bluetooth_mac2device.h"
 #include <iostream>
 

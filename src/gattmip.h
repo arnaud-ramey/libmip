@@ -46,7 +46,6 @@ extern "C" {
 #include <vector>
 #include <iomanip>      // std::setfill, std::setw
 
-
 #include "mipcommands.h"
 
 //#define DEBUG_PRINT(...)   {}
@@ -81,7 +80,7 @@ public:
     inline std::string to_string() const {
       std::ostringstream out;
       out << '[' << led2str(l1) << ';' << led2str(l2) << ';'
-             << led2str(l3) << ';' << led2str(l4) << ']';
+          << led2str(l3) << ';' << led2str(l4) << ']';
       return out.str();
     }
   }; // end struct HeadLed
@@ -110,14 +109,30 @@ public:
 
   //////////////////////////////////////////////////////////////////////////////
 
-  /*!
-   * \brief connect
+  /*! Connect with a given Bluetooth Low Energy (BTLE) device
+   *  to a MiP robot, identified by its MAC.
+   * \example connect("hci0", "D0:39:72:B7:AF:66")
    * \param src
-   *  corresponds to gatttool parameter -i :
+   *  The Bluetooth Low Energy (BTLE) device name.
+   *  This parameter corresponds to gatttool parameter -i :
    *    "Specify local adapter interface", "hciX"
+   *
+   *    You can obtain the list of devices by running in a terminal
+   *  $ hciconfig -a
+   *    The Bluetooth Low Energy (BTLE) devices use Bluetooth 4.0 and
+   *    can be identified by the line
+   *    "HCI Version: 4.0"
+   *
+   *  If you want to use a device thanks to its MAC instead of its device name,
+   *    use bluetooth_mac2device()
    * \param dst
-   *  corresponds to gatttool parameter -b :
+   *  The MiP mac address.
+   *  This parameter corresponds to gatttool parameter -b :
    *    "Specify remote Bluetooth address", "MAC"
+   *  You can get the list of devices by running in a terminal
+   *  $ sudo hcitool -i hciX lescan
+   *  where hciX is your Bluetooth Low Energy (BTLE) device
+   *  \return true if the connection was a success
    */
   bool connect(const char* src, const char* dst) {
     // -t : "Set LE address type. Default: public", "[public | random]"
@@ -132,7 +147,7 @@ public:
              src, dst, error->message);
       return false;
     }
-    printf("gatt_connect('%s'->'%s') succesful\n", src, dst);
+    DEBUG_PRINT("gatt_connect('%s'->'%s') succesful\n", src, dst);
     return true;
   }
 
@@ -140,7 +155,7 @@ public:
 
   //! \arg sound_idx Sound file index (1~106) - Send 105 to stop playing
   inline bool play_sound(uint sound_idx) {
-    printf("play_sound(%i)\n", sound_idx);
+    DEBUG_PRINT("play_sound(%i)\n", sound_idx);
     // sudo gatttool -­i hci1 ­-b D0:39:72:B7:AF:66 --char­-write­ -a 0x0013 -n 0602
     return send_order1(CMD_PLAY_SOUND, clamp(sound_idx, 1, 106));
   }
@@ -154,7 +169,7 @@ public:
     int angle_deg = rad2deg_norm(angle_rad, -360, 360);
     bool ccw = (angle_deg < 0);
     int distance_cm = clamp(fabs(distance_m*100.), 0, 255);
-    printf("distance_cm:%i\n", distance_cm);
+    DEBUG_PRINT("distance_cm:%i\n", distance_cm);
     // BYTE 1 : Forward: 0X00 or Backward: 0X01
     // BYTE 2 : Distance (cm): 0x00­0xFF
     // BYTE 3 : Turn Clockwise: 0X00 or Anti­-clockwise: 0X01
@@ -225,6 +240,7 @@ public:
   inline bool set_game_mode(const GameMode & mode) {
     return send_order1(0x82, mode);
   }
+  //! \return true if the request has been correctly sent to the robot
   inline bool request_game_mode() { return send_order0(0x82); }
   //! \see GameMode enum
   inline GameMode get_game_mode() { return _game_mode; }
@@ -235,10 +251,12 @@ public:
 
   //////////////////////////////////////////////////////////////////////////////
 
+  //! stop the robot motion
   inline bool stop() { return send_order0(0x77); }
 
   //////////////////////////////////////////////////////////////////////////////
 
+  //! \return true if the request has been correctly sent to the robot
   inline bool request_battery_voltage() { return send_order0(CMD_MIP_STATUS); }
   //! between 4.0V and 6.4V, or < 0 if error
   inline double get_battery_voltage() { return _battery_voltage; }
@@ -250,6 +268,7 @@ public:
 
   //////////////////////////////////////////////////////////////////////////////
 
+  //! \return true if the request has been correctly sent to the robot
   inline bool request_status() { return send_order0(CMD_MIP_STATUS); }
   //! \see Status enum
   inline Status get_status() { return _status; }
@@ -260,10 +279,12 @@ public:
 
   //////////////////////////////////////////////////////////////////////////////
 
+  //! this command is not really clear...
   inline bool up() { return send_order1(0x23, 2); }
 
   //////////////////////////////////////////////////////////////////////////////
 
+  //! \return true if the request has been correctly sent to the robot
   inline bool request_weight_update() { return send_order0(0x81); }
   //! \return angle with vertical, in [-45, 45], or -1 if ERROR.
   inline int get_weight_update() { return _weight; }
@@ -280,31 +301,34 @@ public:
     int toff = clamp( (int) (l.time_flash_off_sec * 500), 1, 255);
     return send_order5(CMD_FLASH_CHEST_LED, l.r, l.g, l.b, ton, toff);
   }
+  //! \return true if the request has been correctly sent to the robot
   inline bool request_chest_LED() { return send_order0(0x83); }
   //! \return r,g,b in [0, 255]
   inline ChestLed get_chest_LED() { return _chest_led; }
 
   //////////////////////////////////////////////////////////////////////////////
 
-  //! r,g,b in [0, 255],
+  //! \param HeadLed l: for each of the four leds, 0=off,1=on,2=blink_slow,3=blink_fast
   inline bool set_head_LED(const HeadLed & l) {
     return send_order4(CMD_SET_HEAD_LED, l.l1, l.l2, l.l3, l.l4);
   }
+  //! \return true if the request has been correctly sent to the robot
   inline bool request_head_LED() { return send_order0(CMD_HEAD_LED); }
-  //! \return r,g,b in [0, 255]
+  //! \return HeadLed l: for each of the four leds, 0=off,1=on,2=blink_slow,3=blink_fast
   inline HeadLed get_head_LED() { return _head_led; }
 
   //////////////////////////////////////////////////////////////////////////////
 
+  //! \return true if the request has been correctly sent to the robot
   inline bool request_odometer_reading() { return send_order0(CMD_ODOMETER_READING); }
-  //! \return odometer in meters
+  //! \return odometry in meters
   inline double get_odometer_reading() { return _odometer_reading_m; }
 
   //////////////////////////////////////////////////////////////////////////////
 
-  //! \see Gesture enum
+  //! \return last gesture detected - \see Gesture enum
   inline Gesture get_gesture_detect() { return _gesture_detect; }
-  //! \see Gesture enum
+  //! \return last gesture detected - \see Gesture enum
   inline const char* get_gesture_detect2str() {
     return gesture2str(get_gesture_detect());
   }
@@ -315,6 +339,7 @@ public:
   inline bool set_gesture_or_radar_mode(GestureOrRadarMode mode) {
     return send_order1(CMD_SET_GESTURE_OR_RADAR_MODE, mode);
   }
+  //! \return true if the request has been correctly sent to the robot
   inline bool request_gesture_or_radar_mode() {
     return send_order0(CMD_RADAR_MODE_STATUS);
   }
@@ -338,18 +363,20 @@ public:
 
   //////////////////////////////////////////////////////////////////////////////
 
+  //! \return true if the request has been correctly sent to the robot
   inline bool request_software_version() {
     return send_order0(CMD_MIP_SOFTWARE_VERSION);
   }
-  //! "YYYY/MM/DD-NN" where NN is the day's number version
+  //! \return "YYYY/MM/DD-NN" where NN is the day's number version
   inline std::string get_software_version() { return _software_version; }
 
   //////////////////////////////////////////////////////////////////////////////
 
+  //! \return true if the request has been correctly sent to the robot
   inline bool request_hardware_version() {
     return send_order0(CMD_MIP_HARDWARE_INFO);
   }
-  //! "VV-HH", where VV is the voice chip version and HH is the hardware version
+  //! \return "VV-HH", where VV is the voice chip version and HH is the hardware version
   inline std::string get_hardware_version() { return _hardware_version; }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -358,16 +385,16 @@ public:
   inline bool set_volume(uint vol) {
     return send_order1(0x06, 247 + clamp(vol, 0, 7) ); // 0xF7­~0xFE for volume
   }
-  inline bool     request_volume() { return send_order0(CMD_MIP_VOLUME); }
-  //! in 0-7
+  //! \return true if the request has been correctly sent to the robot
+  inline bool request_volume() { return send_order0(CMD_MIP_VOLUME); }
+  //! \return volume in 0-7
   inline unsigned int get_volume() { return _volume; }
 
   //////////////////////////////////////////////////////////////////////////////
 
-  //! extend this function to add behaviour upon reception of a notificatin
+  //! extend this function to add behaviours upon reception of a notification
   virtual void notification_post_hook(unsigned int cmd, const std::vector<int> & values) {
   }
-
 
 protected:
   //////////////////////////////////////////////////////////////////////////////
@@ -445,6 +472,7 @@ protected:
 
   //////////////////////////////////////////////////////////////////////////////
 
+  //! low-level GATT order send
   inline bool send_order(uint8_t *value, int vlen) {
     return gatt_write_cmd(_attrib, _handle_write, value, vlen,
                           NULL,
@@ -454,51 +482,54 @@ protected:
 
   //////////////////////////////////////////////////////////////////////////////
 
+  //! send_order() versions for fixed number of parameters
   inline bool send_order0(uint8_t cmd) {
-    printf("send_order0(0x%02x)\n", cmd);
+    DEBUG_PRINT("send_order0(0x%02x=%s)\n", cmd, cmd2str(cmd));
     uint8_t value_arr[1] = {cmd};
     return send_order(value_arr, 1);
   }
   inline bool send_order1(uint8_t cmd, uint8_t param1) {
-    printf("send_order1(0x%02x, params:0x%02x)\n", cmd, param1);
+    DEBUG_PRINT("send_order1(0x%02x=%s, params:0x%02x)\n", cmd, cmd2str(cmd), param1);
     uint8_t value_arr[2] = {cmd, param1};
     return send_order(value_arr, 2);
   }
   inline bool send_order2(uint8_t cmd, uint8_t param1, uint8_t param2) {
-    printf("send_order2(0x%02x, params:0x%02x, 0x%02x)\n", cmd, param1, param2);
+    DEBUG_PRINT("send_order2(0x%02x=%s, params:0x%02x, 0x%02x)\n", cmd, cmd2str(cmd), param1, param2);
     uint8_t value_arr[3] = {cmd, param1, param2};
     return send_order(value_arr, 3);
   }
   inline bool send_order3(uint8_t cmd, uint8_t param1, uint8_t param2, uint8_t param3) {
-    printf("send_order3(0x%02x, params:0x%02x, 0x%02x, 0x%02x)\n", cmd,
-           param1, param2, param3);
+    DEBUG_PRINT("send_order3(0x%02x=%s, params:0x%02x, 0x%02x, 0x%02x)\n",
+                cmd, cmd2str(cmd), param1, param2, param3);
     uint8_t value_arr[4] = {cmd, param1, param2, param3};
     return send_order(value_arr, 4);
   }
   inline bool send_order4(uint8_t cmd, uint8_t param1, uint8_t param2,
                           uint8_t param3, uint8_t param4) {
-    printf("send_order4(0x%02x, params:0x%02x, 0x%02x, 0x%02x, 0x%02x)\n", cmd,
-           param1, param2, param3, param4);
+    DEBUG_PRINT("send_order4(0x%02x=%s, params:0x%02x, 0x%02x, 0x%02x, 0x%02x)\n",
+                cmd, cmd2str(cmd), param1, param2, param3, param4);
     uint8_t value_arr[5] = {cmd, param1, param2, param3};
     return send_order(value_arr, 5);
   }
   inline bool send_order5(uint8_t cmd, uint8_t param1, uint8_t param2,
                           uint8_t param3, uint8_t param4, uint8_t param5) {
-    printf("send_order5(0x%02x, params:0x%02x, 0x%02x, 0x%02x, 0x%02x, 0x%02x)\n", cmd,
-           param1, param2, param3, param4, param5);
+    DEBUG_PRINT("send_order5(0x%02x=%s, params:0x%02x, 0x%02x, 0x%02x, 0x%02x, 0x%02x)\n",
+                cmd, cmd2str(cmd), param1, param2, param3, param4, param5);
     uint8_t value_arr[6] = {cmd, param1, param2, param3};
     return send_order(value_arr, 6);
   }
 
   //////////////////////////////////////////////////////////////////////////////
 
+  //! clamp a value between boundaries
   inline static uint clamp(uint x, uint min, uint max) {
     return (x < min ? min : x > max ? max : x);
   }
 
   //////////////////////////////////////////////////////////////////////////////
 
-  // https://stackoverflow.com/questions/13490977/convert-hex-stdstring-to-unsigned-char
+  /*! convert a hex value into ints
+   https://stackoverflow.com/questions/13490977/convert-hex-stdstring-to-unsigned-char */
   inline static unsigned int hex2int(const std::string & char_pair){
     std::stringstream convertStream;
     convertStream << std::hex << char_pair;
@@ -509,17 +540,10 @@ protected:
 
   //////////////////////////////////////////////////////////////////////////////
 
-  static const inline std::string int_to_hex(uint i1, uint ndigits = 2) {
-    std::ostringstream ans;
-    ans << std::setw(ndigits) << std::setfill('0') << std::hex << i1;
-    return ans.str();
-  }
-
-  //////////////////////////////////////////////////////////////////////////////
-
-  inline static uint rad2deg_norm(const double & angle_rad,
-                                  double angle_min = 0,
-                                  double angle_max = 360) {
+  //! convert an angle in radians into an angle in degrees, clamping it in given boundaries
+  inline static double rad2deg_norm(const double & angle_rad,
+                                    double angle_min = 0,
+                                    double angle_max = 360) {
     int angle_deg = angle_rad * RAD2DEG;
     while (angle_deg < angle_min)    angle_deg+=360;
     while (angle_deg >= angle_max) angle_deg-=360;
@@ -528,30 +552,30 @@ protected:
 
   //////////////////////////////////////////////////////////////////////////////
 
-  static void events_handler(const uint8_t *pdu, uint16_t len, gpointer user_data)
-  {
-    printf("events_handler()\n");
+  //! the events handler callback
+  static void events_handler(const uint8_t *pdu, uint16_t len, gpointer user_data) {
+    DEBUG_PRINT("events_handler()\n");
     uint16_t handle, i;
     handle = att_get_u16(&pdu[1]);
     switch (pdu[0]) {
       case ATT_OP_HANDLE_NOTIFY:
-        printf("Notification handle = 0x%04x: ", handle);
+        DEBUG_PRINT("Notification handle = 0x%04x: ", handle);
         break;
       case ATT_OP_HANDLE_IND:
-        printf("Indication   handle = 0x%04x: ", handle);
+        DEBUG_PRINT("Indication   handle = 0x%04x: ", handle);
         break;
       default:
-        printf("Invalid opcode\n");
+        printf("Invalid opcode %i\n", pdu[0]);
         return;
     }
 
     std::ostringstream hex_ans_stream;
-    //printf("values: ");
+    //DEBUG_PRINT("values: ");
     for (i = 3; i < len; i++) {
       hex_ans_stream << (char) pdu[i];
-      //printf("'%c'=%i=0x%02x ", pdu[i], pdu[i], pdu[i]);
+      //DEBUG_PRINT("'%c'=%i=0x%02x ", pdu[i], pdu[i], pdu[i]);
     }
-    // printf("\n");
+    // DEBUG_PRINT("\n");
     std::string hex_ans = hex_ans_stream.str();
     // command - the first 2 chars are the command number
     unsigned int cmd = hex2int(hex_ans.substr(0, 2)); // in decimal base
@@ -563,7 +587,8 @@ protected:
     std::ostringstream values_str;
     for (unsigned int i = 0; i < npairs; ++i)
       values_str << values[i] << ";";
-    printf("cmd:0x%02x, values:'%s'\n", cmd, values_str.str().c_str());
+    DEBUG_PRINT("cmd:0x%02x=%s, values:'%s'\n",
+                cmd, cmd2str(cmd), values_str.str().c_str());
 
     Mip* this_ = (Mip*) user_data;
     this_->store_results(cmd, values);
@@ -571,8 +596,9 @@ protected:
 
   //////////////////////////////////////////////////////////////////////////////
 
+  //! the GATT connect callback
   static void connect_cb(GIOChannel *io, GError *err, gpointer user_data) {
-    printf("connect_cb()\n");
+    DEBUG_PRINT("connect_cb()\n");
     if (err) {
       g_printerr("%s\n", err->message);
       return;
@@ -585,18 +611,18 @@ protected:
     //              GAttribNotifyFunc func, gpointer user_data, GDestroyNotify notify)
     g_attrib_register(this_->_attrib, ATT_OP_HANDLE_NOTIFY, this_->_handle_read,
                       Mip::events_handler, this_,
-                      //Mip::notify_cb);
                       NULL);
     g_attrib_register(this_->_attrib, ATT_OP_HANDLE_IND, this_->_handle_read,
                       Mip::events_handler, this_,
-                      //Mip::notify_cb);
                       NULL);
   } // end connect_cb();
 
   //////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
 
+  //! GLib stuff
   GAttrib *_attrib;
+  //! handles for reading and writing parameters from/to the robot
   int _handle_read, _handle_write;
   //! in 0-7
   unsigned int _volume;

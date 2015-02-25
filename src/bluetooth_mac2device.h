@@ -1,8 +1,8 @@
 /*!
-  file
-  author      Arnaud Ramey <arnaud.a.ramey@gmail.com>
+  \file        bluetooth_mac2device.h
+  \author      Arnaud Ramey <arnaud.a.ramey@gmail.com>
                 -- Robotics Lab, University Carlos III of Madrid
-  date        2015/2/22
+  \date        2015/2/22
 
 ________________________________________________________________________________
 
@@ -19,26 +19,9 @@ Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ________________________________________________________________________________
-
-  odo Description of the file
-
-section Parameters
-  - b "foo"
-        [string] (default: "bar")
-        Description of the parameter.
-
-section Subscriptions
-  - b "/foo"
-        [xxx]
-        Descrption of the subscription
-
-section Publications
-  - b "~foo"
-        [xxx]
-        Descrption of the publication
-
- */
-
+Convert a bluetooth device MAC address, for instance "00:11:22:33:44:55",
+ *  into a device name, for instance "hci0".
+*/
 #ifndef BLUETOOTH_MAC2DEVICE_H
 #define BLUETOOTH_MAC2DEVICE_H
 
@@ -47,8 +30,22 @@ section Publications
 #include "string_split.h"
 #include <algorithm>
 
-std::string bluetooth_mac2device(const std::string & address) {
-  printf("bluetooth_mac2device('%s')\n", address.c_str());
+/*! Convert a bluetooth device MAC address, for instance "00:11:22:33:44:55",
+ *  into a device name, for instance "hci0".
+ * \brief bluetooth_mac2device
+ * \param mac_address
+ *    the MAC address of the device we want to use.
+ *
+ *    You can obtain the list of devices by running in a terminal
+ *  $ hciconfig -a
+ *    The Bluetooth Low Energy (BTLE) devices use Bluetooth 4.0 and
+ *    can be identified by the line
+ *    "HCI Version: 4.0"
+ * \return the device name of the device with the given MAC,
+ *    or "" if the device does not exist.
+ */
+std::string bluetooth_mac2device(const std::string & mac_address) {
+  printf("bluetooth_mac2device('%s')\n", mac_address.c_str());
   std::string result = exec_system_get_output("hciconfig");
   StringUtils::find_and_replace(result, "\n", " ");
   StringUtils::find_and_replace(result, "\t", " ");
@@ -57,9 +54,9 @@ std::string bluetooth_mac2device(const std::string & address) {
   std::vector<std::string> words;
   StringUtils::StringSplit(result, " ", &words);
   std::vector<std::string>::const_iterator it =
-      std::find(words.begin(), words.end(), address)  ;
+      std::find(words.begin(), words.end(), mac_address)  ;
   if (it == words.end()) {
-    printf("No device with address'%s'\n", address.c_str());
+    printf("No device with address'%s'\n", mac_address.c_str());
     return "";
   }
   while (it >= words.begin()) {
@@ -67,7 +64,7 @@ std::string bluetooth_mac2device(const std::string & address) {
       return it->substr(0, 4);
     --it;
   }
-  printf("Device with address'%s' has no 'hci' name!\n", address.c_str());
+  printf("Device with address'%s' has no 'hci' name!\n", mac_address.c_str());
   return "";
 } // end bluetooth_mac2device()
 

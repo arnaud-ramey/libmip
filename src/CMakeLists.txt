@@ -14,15 +14,16 @@ add_library(libgatt
   #libgatt/src/utils.c
 )
 
-add_executable(system_client system_client.cpp exec_system_get_output.h mip.h)
+add_executable(gatttoolmip_test  gatttoolmip_test.cpp exec_system_get_output.h gatttoolmip.h)
 
-add_executable(mip_prompt mip_prompt.cpp mipcommands.h mip.h
-                          bluetooth_mac2device.h exec_system_get_output.h)
-target_link_libraries(mip_prompt libgatt ${GLIB_LIBRARIES})
+add_executable(gatttoolmip_prompt  gatttoolmip_prompt.cpp mipcommands.h gatttoolmip.h
+                                   bluetooth_mac2device.h exec_system_get_output.h)
+target_link_libraries(gatttoolmip_prompt libgatt ${GLIB_LIBRARIES})
 
-add_executable(gattmip_prompt gattmip_prompt.cpp mipcommands.h gattmip.h
-               bluetooth_mac2device.h exec_system_get_output.h)
+add_executable(gattmip_test        gattmip_test.cpp  gatttoolmip.h  mipcommands.h)
+target_link_libraries(gattmip_test libgatt ${GLIB_LIBRARIES})
+
+add_executable(gattmip_prompt  gattmip_prompt.cpp mipcommands.h gattmip.h
+                               bluetooth_mac2device.h exec_system_get_output.h)
 target_link_libraries(gattmip_prompt libgatt ${GLIB_LIBRARIES})
 
-add_executable(gattmip  gattmip.cpp  gattmip.h  mipcommands.h)
-target_link_libraries(gattmip libgatt ${GLIB_LIBRARIES})

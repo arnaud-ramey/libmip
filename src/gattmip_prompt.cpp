@@ -52,21 +52,19 @@ void print_help(int argc, char** argv) {
   printf("'can':  continuous_drive_angular      speed(-64~64)\n");
   printf("'mod':  get_game_mode\n");
   printf("'sto':  stop\n");
-  printf("'sta':  status\n");
+  printf("'sta':  get_status\n");
   printf("'up':   up\n");
-  printf("'wei':  weight\n");
-  printf("'cled': get chest led\n");
-  printf("'cled': set chest led                 r(0~255) g(0~255) b(0~255)\n");
-  printf("'cled': set chest led                 r(0~255) g(0~255) b(0~255) time_flash_on(s) time_flash_off(s)\n");
-  printf("'hled': get head led\n");
-  printf("'hled': set head led                  l1(0=off,1=on,2=blink_slow,3=blink_fast) l2 l3 l4\n");
+  printf("'wei':  get_weight\n");
+  printf("'cled': get_chest led\n");
+  printf("'cled': set_chest led                 r(0~255) g(0~255) b(0~255)\n");
+  printf("'cled': set_chest led                 r(0~255) g(0~255) b(0~255) time_flash_on(s) time_flash_off(s)\n");
+  printf("'hled': get_head led\n");
+  printf("'hled': set_head led                  l1(0=off,1=on,2=blink_slow,3=blink_fast) l2 l3 l4\n");
   printf("'odo':  get_odometer_reading\n");
-
   printf("'ges':  get_gesture_detect\n");
   printf("'gmod': get_gesture_or_radar_mode\n");
   printf("'gmod': set_gesture_or_radar_mode     mod(0=GESTUREOFF_RADAROFF,2=GESTUREON_RADAROFF,4=GESTUREOFF_RADARON)\n");
   printf("'rad':  get_radar_response\n");
-
   printf("'bat':  get_battery_voltage\n");
   printf("'sve':  get_software_version\n");
   printf("'hve':  get_hardware_version\n");

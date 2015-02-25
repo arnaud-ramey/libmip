@@ -90,6 +90,74 @@ static const MipCommand CMD_REQUEST_CLAP_ENABLED=0x1F;
 static const MipCommand CMD_CLAP_STATUS=0x1F;
 static const MipCommand CMD_DELAY_TIME_BETWEEN_TWO_CLAPS=0x20;
 
+inline static const char* cmd2str(const MipCommand cmd) {
+  switch (cmd) {
+    case CMD_PLAY_SOUND: return "PLAY_SOUND";
+    case CMD_SET_MIP_POSITION: return "SET_MIP_POSITION";
+    case CMD_DISTANCE_DRIVE: return "DISTANCE_DRIVE";
+    case CMD_DRIVE_FORWARD_WITH_TIME: return "DRIVE_FORWARD_WITH_TIME";
+    case CMD_DRIVE_BACKWARD_WITH_TIME: return "DRIVE_BACKWARD_WITH_TIME";
+    case CMD_TURN_LEFT_BY_ANGLE: return "TURN_LEFT_BY_ANGLE";
+    case CMD_TURN_RIGHT_BY_ANGLE: return "TURN_RIGHT_BY_ANGLE";
+    case CMD_CONTINUOUS_DRIVE: return "CONTINUOUS_DRIVE";
+    case CMD_SET_GAME_MODE: return "SET_GAME_MODE";
+    //case CMD_GET_CURRENT_MIP_GAME_MODE: return "GET_CURRENT_MIP_GAME_MODE";
+    case CMD_CURRENT_MIP_GAME_MODE: return "CURRENT_MIP_GAME_MODE";
+    case CMD_STOP: return "STOP";
+    //case CMD_REQUEST_MIP_STATUS: return "REQUEST_MIP_STATUS";
+    case CMD_MIP_STATUS: return "MIP_STATUS";
+    case CMD_MIP_GET_UP: return "MIP_GET_UP";
+    //case CMD_REQUEST_WEIGHT_UPDATE: return "REQUEST_WEIGHT_UPDATE";
+    case CMD_WEIGHT_UPDATE: return "WEIGHT_UPDATE";
+    //case CMD_REQUEST_CHEST_LED: return "REQUEST_CHEST_LED";
+    case CMD_CHEST_LED: return "CHEST_LED";
+    case CMD_SET_CHEST_LED: return "SET_CHEST_LED";
+    case CMD_FLASH_CHEST_LED: return "FLASH_CHEST_LED";
+    case CMD_SET_HEAD_LED: return "SET_HEAD_LED";
+    //case CMD_REQUEST_HEAD_LED: return "REQUEST_HEAD_LED";
+    case CMD_HEAD_LED: return "HEAD_LED";
+    //case CMD_READ_ODOMETER: return "READ_ODOMETER";
+    case CMD_ODOMETER_READING: return "ODOMETER_READING";
+    case CMD_REST_ODOMETER: return "REST_ODOMETER";
+    case CMD_GESTURE_DETECT: return "GESTURE_DETECT";
+    //case CMD_SET_GESTURE_OR_RADAR_MODE: return "SET_GESTURE_OR_RADAR_MODE";
+    //case CMD_GET_RADAR_MODE: return "GET_RADAR_MODE";
+    case CMD_RADAR_MODE_STATUS: return "RADAR_MODE_STATUS";
+    case CMD_RADAR_RESPONSE: return "RADAR_RESPONSE";
+    case CMD_MIP_DETECTION_MODE: return "MIP_DETECTION_MODE";
+    //case CMD_REQUEST_MIP_DETECTION_MODE: return "REQUEST_MIP_DETECTION_MODE";
+    case CMD_MIP_DETECTION_STATUS: return "MIP_DETECTION_STATUS";
+    case CMD_MIP_DETECTED: return "MIP_DETECTED";
+    case CMD_SHAKE_DETECTED: return "SHAKE_DETECTED";
+    case CMD_IR_REMOTE_CONTROL_ENABLED: return "IR_REMOTE_CONTROL_ENABLED";
+    //case CMD_REQUEST_IR_CONTROL_ENABLED: return "REQUEST_IR_CONTROL_ENABLED";
+    case CMD_IR_CONTROL_STATUS: return "IR_CONTROL_STATUS";
+    case CMD_SLEEP: return "SLEEP";
+    case CMD_DISCONNECT_APP: return "DISCONNECT_APP";
+    case CMD_FORCE_BLE_DISCONNECT: return "FORCE_BLE_DISCONNECT";
+    case CMD_SET_USER_DATA: return "SET_USER_DATA";
+    //case CMD_GET_USER_OR_OTHER_EEPROM_DATA: return "GET_USER_OR_OTHER_EEPROM_DATA";
+    case CMD_MIP_USER_OR_OTHER_EEPROM_DATA: return "MIP_USER_OR_OTHER_EEPROM_DATA";
+    //case CMD_GET_MIP_SOFTWARE_VERSION: return "GET_MIP_SOFTWARE_VERSION";
+    case CMD_MIP_SOFTWARE_VERSION: return "MIP_SOFTWARE_VERSION";
+    //case CMD_GET_MIP_HARDWARE_INFO: return "GET_MIP_HARDWARE_INFO";
+    case CMD_MIP_HARDWARE_INFO: return "MIP_HARDWARE_INFO";
+    case CMD_SET_MIP_VOLUME: return "MIP_VOLUME";
+    //case CMD_GET_MIP_VOLUME: return "GET_MIP_VOLUME";
+    case CMD_MIP_VOLUME: return "MIP_VOLUME";
+    case CMD_SEND_IR_DONGLE_CODE: return "SEND_IR_DONGLE_CODE";
+    case CMD_RECEIVE_IR_DONGLE_CODE: return "RECEIVE_IR_DONGLE_CODE";
+    case CMD_CLAP_TIMES: return "CLAP_TIMES";
+    case CMD_CLAP_ENABLED: return "CLAP_ENABLED";
+    //case CMD_REQUEST_CLAP_ENABLED: return "REQUEST_CLAP_ENABLED";
+    case CMD_CLAP_STATUS: return "CLAP_STATUS";
+    case CMD_DELAY_TIME_BETWEEN_TWO_CLAPS: return "DELAY_TIME_BETWEEN_TWO_CLAPS";
+    case ERROR:
+    default:
+      return "ERROR";
+  }
+} // end cmd2str()
+
 ////////////////////////////////////////////////////////////////////////////////
 typedef int GameMode;
 static const GameMode GAME_MODE_APP = 1;
