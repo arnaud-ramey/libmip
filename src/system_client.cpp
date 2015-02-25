@@ -1,12 +1,14 @@
+
+#include "bluetooth_mac2device.h"
 #include "mip.h"
 
 int main(int argc, char **argv) {
   Mip mip;
   //mip.set_bluetooth_device_by_name("hci0");
-  mip.set_bluetooth_device_by_mac("00:1A:7D:DA:71:11");
-  mip.connect("D0:39:72:B7:AF:66");
+  mip.connect(bluetooth_mac2device("00:1A:7D:DA:71:11").c_str(),
+              "D0:39:72:B7:AF:66");
   printf("volume:%i\n", mip.get_volume());
-  printf("version:'%s'\n", mip.get_version().c_str());
+  printf("version:'%s'\n", mip.get_software_version().c_str());
   printf("game_mode:%i\n", mip.get_game_mode());
   printf("battery:%fV = %i%%\n", mip.get_battery_voltage(), mip.get_battery_percentage());
 

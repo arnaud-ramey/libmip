@@ -20,7 +20,14 @@ You should have received a copy of the GNU Lesser General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ________________________________________________________________________________
 
-The MIP library.
+The MIP library, made for controlling the WowWee MiP robot
+and accessing its sensor readings.
+Implements most of the commands understood by the WowWee MiP robot.
+Cf https://github.com/WowWeeLabs/MiP-BLE-Protocol/blob/master/MiP-Protocol.md
+
+This implementation is based on the Bluetooth Low Energy (BTLE) protocol,
+and wraps system calls to the gatttool utility,
+shipped with the Linux Bluetooth stacks.
  */
 #ifndef MIP_H
 #define MIP_H
@@ -73,45 +80,14 @@ public:
 
   //////////////////////////////////////////////////////////////////////////////
 
-  bool set_bluetooth_device_by_name(const std::string & device) {
-    printf("Mip::set_bluetooth_device_by_name(device:'%s')\n", device.c_str());
-    _hci_device = device;
+  inline bool connect(const char* src, const char* dst) {
+    printf("connect('%s'->'%s')\n", src, dst);
+    _hci_device = src;
     // sudo hciconfig hci1 up
     std::ostringstream order;
     order << "hciconfig " << _hci_device << " up";
     exec_system_get_output(order.str().c_str());
-  }
-
-  //////////////////////////////////////////////////////////////////////////////
-
-  bool set_bluetooth_device_by_mac(const std::string & address) {
-    printf("Mip::set_bluetooth_device_by_mac('%s')\n", address.c_str());
-    std::string result = exec_system_get_output("hciconfig");
-    StringUtils::find_and_replace(result, "\n", " ");
-    StringUtils::find_and_replace(result, "\t", " ");
-    while (StringUtils::find_and_replace(result, "  ", " ")) {}
-    DEBUG_PRINT("result:'%s\n'\n", result.c_str());
-    std::vector<std::string> words;
-    StringUtils::StringSplit(result, " ", &words);
-    std::vector<std::string>::const_iterator it =
-        std::find(words.begin(), words.end(), address)  ;
-    if (it == words.end()) {
-      printf("Mip: No device with address'%s'\n", address.c_str());
-      return false;
-    }
-    while (it >= words.begin()) {
-      if (it->size() > 3 && it->substr(0, 3) == "hci")
-        return set_bluetooth_device_by_name(it->substr(0, 4));
-      --it;
-    }
-    printf("Mip: Device with address'%s' has no 'hci' name!\n", address.c_str());
-    return false;
-  } // end set_bluetooth_device_by_mac()
-
-  //////////////////////////////////////////////////////////////////////////////
-
-  inline bool connect(const std::string & address) {
-    _address = address;
+    _mip_address = dst;
     return true; // TODO check device exists?
   }
 
@@ -309,7 +285,7 @@ public:
   //////////////////////////////////////////////////////////////////////////////
 
   //! "YYYY/MM/DD-NN" where NN is the day's number version
-  inline std::string get_version() {
+  inline std::string get_software_version() {
     int year, month, day, number;
     if (!get_value_int4("14", year, month, day, number))
       return "";
@@ -381,7 +357,7 @@ protected:
   inline bool send_order(const std::string & handle, const std::string & param = "") {
     // sudo gatttool -i hci1 -b D0:39:72:B7:AF:66 --char-write -a 0x0013 -n 0602
     std::ostringstream order;
-    order << "gatttool -i " << _hci_device << " -b " << _address;
+    order << "gatttool -i " << _hci_device << " -b " << _mip_address;
     order << " --char-write -a 0x0013 -n " << handle << param;
     DEBUG_PRINT("order:'%s'\n", order.str().c_str());
     return system(order.str().c_str());
@@ -411,7 +387,7 @@ protected:
     std::string keyword = "value: " + int_to_hex(handle_char1) + ' ' + int_to_hex(handle_char2) + ' ';
     // build order
     std::ostringstream order;
-    order << "timeout .5 gatttool -i " << _hci_device << " -b " << _address;
+    order << "timeout .5 gatttool -i " << _hci_device << " -b " << _mip_address;
     order << " --char-write-req -a 0x0013 -n " << handle << " --listen";
     // https://superuser.com/questions/402979/kill-program-after-it-outputs-a-given-line-from-a-shell-script
     order << "| grep -m 1 \"" << keyword << "\"";
@@ -498,7 +474,7 @@ protected:
   //////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
 
-  std::string _address, _hci_device;
+  std::string _mip_address, _hci_device;
 }; // end class Mip
 
 

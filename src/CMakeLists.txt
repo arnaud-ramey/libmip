@@ -1,7 +1,3 @@
-add_executable(system_client system_client.cpp exec_system_get_output.h mip.h)
-
-add_executable(mip_prompt mip_prompt.cpp exec_system_get_output.h mip.h)
-
 # compile libgatt, from https://github.com/jacklund/libgatt
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR})
 find_package( GLIB REQUIRED )
@@ -18,8 +14,15 @@ add_library(libgatt
   #libgatt/src/utils.c
 )
 
-add_executable(libgatttest libgatt/src/test.c)
-target_link_libraries(libgatttest libgatt ${GLIB_LIBRARIES})
+add_executable(system_client system_client.cpp exec_system_get_output.h mip.h)
 
-add_executable(gattmip gattmip.cpp mipcommands.h)
+add_executable(mip_prompt mip_prompt.cpp mipcommands.h mip.h
+                          bluetooth_mac2device.h exec_system_get_output.h)
+target_link_libraries(mip_prompt libgatt ${GLIB_LIBRARIES})
+
+add_executable(gattmip_prompt gattmip_prompt.cpp mipcommands.h gattmip.h
+               bluetooth_mac2device.h exec_system_get_output.h)
+target_link_libraries(gattmip_prompt libgatt ${GLIB_LIBRARIES})
+
+add_executable(gattmip  gattmip.cpp  gattmip.h  mipcommands.h)
 target_link_libraries(gattmip libgatt ${GLIB_LIBRARIES})
