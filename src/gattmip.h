@@ -27,8 +27,35 @@ Cf https://github.com/WowWeeLabs/MiP-BLE-Protocol/blob/master/MiP-Protocol.md
 
 This implementation is based on the Bluetooth Low Energy (BTLE) protocol,
 and wraps C GATT commands, such as gatt_connect() and gatt_write_cmd().
- */
 
+A sample application could be:
+////////////////////////////////////////////////////////////////////////////////
+int main() {
+  GMainLoop *main_loop = g_main_loop_new(NULL, FALSE);
+  Mip mip;
+  mip.connect(main_loop, bluetooth_mac2device(YOUR_DEVICE_MAC).c_str(), YOUR_MIP_MAC);
+  g_main_loop_run(main_loop);
+  g_main_loop_unref(main_loop);
+  return 0;
+}
+////////////////////////////////////////////////////////////////////////////////
+
+Or, for doing stuff in the main loop
+(thanks // https://stackoverflow.com/questions/23737750/glib-usage-without-mainloop):
+////////////////////////////////////////////////////////////////////////////////
+int main() {
+  GMainLoop *main_loop = g_main_loop_new(NULL, FALSE);
+  Mip mip;
+  mip.connect(main_loop, bluetooth_mac2device(YOUR_DEVICE_MAC).c_str(), YOUR_MIP_MAC);
+  for (int i = 0; i < 10; ++i) { // iterate a few times to connect well
+    // ... call Mip functions here
+    mip.pump_up_callbacks();
+    usleep(50E3);
+  }
+  return 0;
+}
+////////////////////////////////////////////////////////////////////////////////
+ */
 #ifndef Mip_H
 #define Mip_H
 
@@ -50,8 +77,8 @@ extern "C" {
 
 //#define DEBUG_PRINT(...)   {}
 #define DEBUG_PRINT(...)   printf(__VA_ARGS__)
-#define RAD2DEG 0.01745329251994329577
-#define DEG2RAD 57.2957795130823208768
+#define RAD2DEG 57.2957795130823208768
+#define DEG2RAD 0.01745329251994329577
 
 class Mip {
 public:
@@ -85,10 +112,15 @@ public:
     }
   }; // end struct HeadLed
 
+  //////////////////////////////////////////////////////////////////////////////
+
+  //! ctor
   Mip() {
     // free possibly busy bluetooth devices
     if (system("rfkill unblock all"))
       printf("Could not free possibly busy bluetooth devices! Keep fingers crossed\n");
+    _is_connected = false;
+    // default values
     _handle_read = 0x000e;
     _handle_write = 0x13;
     // default values
@@ -106,6 +138,19 @@ public:
     _gesture_or_radar_mode = ERROR;
     _radar_response = ERROR;
     _shake_detected = ERROR;
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  inline void set_main_loop(GMainLoop *main_loop) {
+    // connect with GLib - iterate a few times to connect well
+    _main_loop = main_loop;
+    _context = g_main_loop_get_context(main_loop);
+    int ntry = 0;
+    while(ntry++ < 100 && !_is_connected) {
+      pump_up_callbacks();
+      usleep(50E3);
+    }
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -135,7 +180,7 @@ public:
    *  where hciX is your Bluetooth Low Energy (BTLE) device
    *  \return true if the connection was a success
    */
-  bool connect(const char* device_name, const char* mip_mac) {
+  bool connect(GMainLoop *main_loop, const char* device_name, const char* mip_mac) {
     // -t : "Set LE address type. Default: public", "[public | random]"
     const char *dst_type = "public",
         // -l : "Set security level. Default: low", "[low | medium | high]"
@@ -148,8 +193,26 @@ public:
              device_name, mip_mac, error->message);
       return false;
     }
+    set_main_loop(main_loop);
+    if (!_is_connected) {
+      printf("Error in gatt_connect('%s'->'%s'): connect_cb() not called!\n",
+             device_name, mip_mac);
+      return false;
+    }
     DEBUG_PRINT("gatt_connect('%s'->'%s') succesful\n", device_name, mip_mac);
     return true;
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  inline void pump_up_callbacks() {
+    g_main_context_iteration(_context, false);
+  }
+  inline void pump_up_callbacks(unsigned int ntimes) {
+    for (int time = 0; time < ntimes; ++time) {
+      pump_up_callbacks();
+      usleep(50E3);
+    }
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -170,20 +233,20 @@ public:
     int angle_deg = rad2deg_norm(angle_rad, -360, 360);
     bool ccw = (angle_deg < 0);
     int distance_cm = clamp(fabs(distance_m*100.), 0, 255);
-    DEBUG_PRINT("distance_cm:%i\n", distance_cm);
+    DEBUG_PRINT("distance_cm:%i, angle_deg:%i\n", distance_cm, angle_deg);
     // BYTE 1 : Forward: 0X00 or Backward: 0X01
     // BYTE 2 : Distance (cm): 0x00­0xFF
     // BYTE 3 : Turn Clockwise: 0X00 or Anti­-clockwise: 0X01
     // BYTE 4 : Turn Angle(High byte): 0x00~0x01
     // BYTE 5 : Turn Angle(Low byte): 0x00~0xFF
     return send_order5(CMD_DISTANCE_DRIVE, backward, distance_cm,
-                       ccw, angle_deg/256, angle_deg%256);
+                       ccw, abs(angle_deg)/256, abs(angle_deg)%256);
   }
 
   //////////////////////////////////////////////////////////////////////////////
 
   /*! \arg speed in 0~30 (-30~0 to go backwards)
-   *  \arg time_s in seconds */
+   *  \arg time_s in seconds, in (0~1.78) */
   inline bool time_drive(double speed, double time_s) {
     int time_7ms = clamp(time_s * 1000/7, 0, 255);
     if (speed > 0)
@@ -394,14 +457,15 @@ public:
   //////////////////////////////////////////////////////////////////////////////
 
   //! extend this function to add behaviours upon reception of a notification
-  virtual void notification_post_hook(unsigned int cmd, const std::vector<int> & values) {
+  virtual void notification_post_hook(MipCommand cmd, const std::vector<int> & values) {
   }
 
 protected:
+
   //////////////////////////////////////////////////////////////////////////////
 
   //! store notification result in Mip class fields
-  inline void store_results(unsigned int cmd, const std::vector<int> & values) {
+  inline void store_results(MipCommand cmd, const std::vector<int> & values) {
     unsigned int nvalues = values.size();
     if (cmd == CMD_GET_CURRENT_MIP_GAME_MODE && nvalues == 1)
       _game_mode = values[0];
@@ -435,9 +499,9 @@ protected:
       // 1 cm=48.5 units,
       // 0xFFFFFFFF=4294967295=88556026.7cm
       double value = values[3]
-          + 255 * values[2]
-          + 255 * 255 * values[1]
-          + 255 * 255 * 255 * values[0];
+                     + 255 * values[2]
+                     + 255 * 255 * values[1]
+                     + 255 * 255 * 255 * values[0];
       double dist_cm = value / 48.5;
       _odometer_reading_m = dist_cm * .01;
     }
@@ -509,14 +573,14 @@ protected:
                           uint8_t param3, uint8_t param4) {
     DEBUG_PRINT("send_order4(0x%02x=%s, params:0x%02x, 0x%02x, 0x%02x, 0x%02x)\n",
                 cmd, cmd2str(cmd), param1, param2, param3, param4);
-    uint8_t value_arr[5] = {cmd, param1, param2, param3};
+    uint8_t value_arr[5] = {cmd, param1, param2, param3, param4};
     return send_order(value_arr, 5);
   }
   inline bool send_order5(uint8_t cmd, uint8_t param1, uint8_t param2,
                           uint8_t param3, uint8_t param4, uint8_t param5) {
     DEBUG_PRINT("send_order5(0x%02x=%s, params:0x%02x, 0x%02x, 0x%02x, 0x%02x, 0x%02x)\n",
                 cmd, cmd2str(cmd), param1, param2, param3, param4, param5);
-    uint8_t value_arr[6] = {cmd, param1, param2, param3};
+    uint8_t value_arr[6] = {cmd, param1, param2, param3, param4, param5};
     return send_order(value_arr, 6);
   }
 
@@ -555,7 +619,7 @@ protected:
 
   //! the events handler callback
   static void events_handler(const uint8_t *pdu, uint16_t len, gpointer user_data) {
-    DEBUG_PRINT("events_handler()\n");
+    //DEBUG_PRINT("events_handler()\n");
     uint16_t handle, i;
     handle = att_get_u16(&pdu[1]);
     switch (pdu[0]) {
@@ -579,7 +643,7 @@ protected:
     // DEBUG_PRINT("\n");
     std::string hex_ans = hex_ans_stream.str();
     // command - the first 2 chars are the command number
-    unsigned int cmd = hex2int(hex_ans.substr(0, 2)); // in decimal base
+    MipCommand cmd = hex2int(hex_ans.substr(0, 2)); // in decimal base
     // convert each pair of values from hex to int
     unsigned int npairs = (hex_ans.size()-2) / 2;
     std::vector<int> values(npairs);
@@ -605,8 +669,8 @@ protected:
       return;
     }
     Mip* this_ = (Mip*) user_data;
-
     this_->_attrib = g_attrib_new(io);
+    this_->_is_connected = true;
     // register the callback
     // g_attrib_register(GAttrib *attrib, guint8 opcode, guint16 handle,
     //              GAttribNotifyFunc func, gpointer user_data, GDestroyNotify notify)
@@ -623,6 +687,9 @@ protected:
 
   //! GLib stuff
   GAttrib *_attrib;
+  GMainLoop *_main_loop;
+  GMainContext * _context;
+  bool _is_connected;
   //! handles for reading and writing parameters from/to the robot
   int _handle_read, _handle_write;
   //! in 0-7

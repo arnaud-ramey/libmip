@@ -14,16 +14,13 @@ add_library(libgatt
   #libgatt/src/utils.c
 )
 
-add_executable(gatttoolmip_test  gatttoolmip_test.cpp exec_system_get_output.h gatttoolmip.h)
-
 add_executable(gatttoolmip_prompt  gatttoolmip_prompt.cpp mipcommands.h gatttoolmip.h
                                    bluetooth_mac2device.h exec_system_get_output.h)
 target_link_libraries(gatttoolmip_prompt libgatt ${GLIB_LIBRARIES})
-
-add_executable(gattmip_test        gattmip_test.cpp  gatttoolmip.h  mipcommands.h)
-target_link_libraries(gattmip_test libgatt ${GLIB_LIBRARIES})
 
 add_executable(gattmip_prompt  gattmip_prompt.cpp mipcommands.h gattmip.h
                                bluetooth_mac2device.h exec_system_get_output.h)
 target_link_libraries(gattmip_prompt libgatt ${GLIB_LIBRARIES})
 
+
+add_subdirectory(samples)

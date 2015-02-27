@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
     printf("Synopsis: %s CMD PARAM\n", argv[0]);
     printf("'sou': play_sound                    sound_idx(1~106)\n");
     printf("'dis': distance_drive                distance_m       angle_rad\n");
-    printf("'tim': time_drive                    speed(-30~30)    time_s\n");
+    printf("'tim': time_drive                    speed(-30~30)    time_s(0~1.78)\n");
     printf("'ang': angle_drive                   speed(-24~24)    angle_rad\n");
     printf("'cli': continuous_drive_linear       speed(-64~64)\n");
     printf("'can': continuous_drive_angular      speed(-64~64)\n");
@@ -44,8 +44,9 @@ int main(int argc, char** argv) {
     return -1;
   }
   Mip mip;
-  if (!mip.connect(bluetooth_mac2device("00:1A:7D:DA:71:11").c_str(),
-              "D0:39:72:B7:AF:66")) {
+  std::string device_mac = (argc >= 2 ? argv[1] : "00:1A:7D:DA:71:11"),
+      mip_mac = (argc >= 3 ? argv[2] : "D0:39:72:B7:AF:66");
+  if (!mip.connect(bluetooth_mac2device(device_mac).c_str(), mip_mac.c_str())) {
     printf("Could not connect to MIP!\n");
     return -1;
   }

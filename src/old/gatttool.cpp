@@ -43,7 +43,7 @@ extern "C" {
 #include "gatttool.h"
 }
 
-static GMainLoop *event_loop;
+static GMainLoop *main_loop;
 
 static void connect_cb(GIOChannel *io, GError *err, gpointer user_data) {
   GAttrib *attrib;
@@ -54,7 +54,7 @@ static void connect_cb(GIOChannel *io, GError *err, gpointer user_data) {
   if (err) {
     g_printerr("%s\n", err->message);
     //got_error = TRUE;
-    g_main_loop_quit(event_loop);
+    g_main_loop_quit(main_loop);
   }
 
   bt_io_get(io, &gerr, BT_IO_OPT_IMTU, &mtu,

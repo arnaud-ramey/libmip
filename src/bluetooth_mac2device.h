@@ -56,7 +56,7 @@ std::string bluetooth_mac2device(const std::string & mac_address) {
   std::vector<std::string>::const_iterator it =
       std::find(words.begin(), words.end(), mac_address)  ;
   if (it == words.end()) {
-    printf("No device with address'%s'\n", mac_address.c_str());
+    printf("bluetooth_mac2device: no device with address'%s'\n", mac_address.c_str());
     return "";
   }
   while (it >= words.begin()) {
@@ -64,7 +64,7 @@ std::string bluetooth_mac2device(const std::string & mac_address) {
       return it->substr(0, 4);
     --it;
   }
-  printf("Device with address'%s' has no 'hci' name!\n", mac_address.c_str());
+  printf("bluetooth_mac2device: device with address'%s' has no 'hci' name!\n", mac_address.c_str());
   return "";
 } // end bluetooth_mac2device()
 
