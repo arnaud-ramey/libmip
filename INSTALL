@@ -3,7 +3,9 @@ ________________________________________________________________________________
 Dependencies
 ________________________________________________________________________________
 You need the following libraries before compiling :
- * cmake  ( sudo apt-get install cmake ).
+ * cmake  ( sudo apt-get install cmake )
+ * glib   ( sudo apt-get install libglib2.0-dev )
+ * bluez  ( sudo apt-get install libbluetooth-dev )
 
 ________________________________________________________________________________
 
