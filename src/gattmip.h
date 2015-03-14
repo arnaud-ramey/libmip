@@ -271,31 +271,62 @@ public:
   //////////////////////////////////////////////////////////////////////////////
 
   /*! \arg speed in 1~64 (-64~1 to go backwards)  */
-  inline bool continuous_drive_linear(double speed) {
-    speed = clamp(speed, -64, 64);
-    if (speed > 32) // 33 ~ 64 => crazy Fw:0x81(slow)~­0xA0(fast) = 129 ~ 160
-      return send_order1(0x78, 96 + speed);
-    if (speed > 0) // 1 ~ 32 => Fw:0x01(slow)~­0x20(fast)
-      return send_order1(0x78, speed);
-    if (speed > -32) // -1 ~ -32 => Bw:0x21(slow)~0x40(fast) = 33 ~ 64
-      return send_order1(0x78, 32 - speed);
+  inline bool continuous_drive_linear(double lin_speed) {
+    lin_speed = clamp(lin_speed, -64, 64);
+    if (lin_speed > 32) // 33 ~ 64 => crazy Fw:0x81(slow)~­0xA0(fast) = 129 ~ 160
+      return send_order1(CMD_CONTINUOUS_DRIVE, 96 + lin_speed);
+    if (lin_speed > 0) // 1 ~ 32 => Fw:0x01(slow)~­0x20(fast)
+      return send_order1(CMD_CONTINUOUS_DRIVE, lin_speed);
+    if (lin_speed > -32) // -1 ~ -32 => Bw:0x21(slow)~0x40(fast) = 33 ~ 64
+      return send_order1(CMD_CONTINUOUS_DRIVE, 32 - lin_speed);
     // -33 -> -64 => crazy Bw:0xA1(slow)~0xC0(fast) = 161 ~ 192
-    return send_order1(0x78, 128 - speed);
+    return send_order1(CMD_CONTINUOUS_DRIVE, 128 - lin_speed);
   }
 
   //////////////////////////////////////////////////////////////////////////////
 
   /*! \arg speed in 0~64 to turn CCW (-64~0 to turn CW)  */
-  inline bool continuous_drive_angular(double speed) {
-    speed = clamp(speed, -64, 63);
-    if (speed > 32) // 33 ~ 64 => crazy Left spin:0xE1(slow)~0xFF(fast) = 225 - 255
-      return send_order1(0x78, 192 + speed);
-    if (speed > 0) // 1 ~ 32 => Left spin:0x61(slow)~0x80(fast) = 97 ~ 128
-      return send_order1(0x78, 96 + speed);
-    if (speed > -32) // -1 ~ -32 => right spin:0x41(slow)~0x60(fast) = 65 ~ 96
-      return send_order1(0x78, 64 - speed);
+  inline bool continuous_drive_angular(double ang_speed) {
+    ang_speed = clamp(ang_speed, -64, 63);
+    if (ang_speed > 32) // 33 ~ 64 => crazy Left spin:0xE1(slow)~0xFF(fast) = 225 - 255
+      return send_order1(CMD_CONTINUOUS_DRIVE, 192 + ang_speed);
+    if (ang_speed > 0) // 1 ~ 32 => Left spin:0x61(slow)~0x80(fast) = 97 ~ 128
+      return send_order1(CMD_CONTINUOUS_DRIVE, 96 + ang_speed);
+    if (ang_speed > -32) // -1 ~ -32 => right spin:0x41(slow)~0x60(fast) = 65 ~ 96
+      return send_order1(CMD_CONTINUOUS_DRIVE, 64 - ang_speed);
     // -33 -> -64 => crazy right spin:0xC1(slow)~0xE0(fast) = 193 ~ 224
-    return send_order1(0x78, 160 - speed);
+    return send_order1(CMD_CONTINUOUS_DRIVE, 160 - ang_speed);
+  }
+
+  /*!
+   *  \arg lin_speed in 1~64 (-64~1 to go backwards)
+   *  \arg ang_speed in 0~64 to turn CCW (-64~0 to turn CW)
+  */
+  inline bool continuous_drive(double lin_speed, double ang_speed) {
+    printf("continuous_drive(%g, %g)\n", lin_speed, ang_speed);
+    int param1, param2;
+    lin_speed = (int) clamp(lin_speed, -64, 64);
+    if (lin_speed > 32) // 33 ~ 64 => crazy Fw:0x81(slow)~­0xA0(fast) = 129 ~ 160
+      param1 = 96 + lin_speed;
+    else if (lin_speed >= 0) // 1 ~ 32 => Fw:0x01(slow)~­0x20(fast)
+      param1 = lin_speed;
+    else if (lin_speed > -32) // -1 ~ -32 => Bw:0x21(slow)~0x40(fast) = 33 ~ 64
+      param1 = 32 - lin_speed;
+    else  // -33 -> -64 => crazy Bw:0xA1(slow)~0xC0(fast) = 161 ~ 192
+      param1 = 128 - lin_speed;
+
+    ang_speed = (int) clamp(ang_speed, -64, 63);
+    if (ang_speed > 32) // 33 ~ 64 => crazy Left spin:0xE1(slow)~0xFF(fast) = 225 - 255
+      param2 = 192 + ang_speed;
+    else if (ang_speed > 0) // 1 ~ 32 => Left spin:0x61(slow)~0x80(fast) = 97 ~ 128
+      param2 = 96 + ang_speed;
+    else if (ang_speed == 0)
+      param2 = 0;
+    else if (ang_speed > -32) // -1 ~ -32 => right spin:0x41(slow)~0x60(fast) = 65 ~ 96
+      param2 = 64 - ang_speed;
+    else  // -33 -> -64 => crazy right spin:0xC1(slow)~0xE0(fast) = 193 ~ 224
+      param2 = 160 - ang_speed;
+    return send_order2(CMD_CONTINUOUS_DRIVE, param1, param2);
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -554,32 +585,36 @@ protected:
     return send_order(value_arr, 1);
   }
   inline bool send_order1(uint8_t cmd, uint8_t param1) {
-    DEBUG_PRINT("send_order1(0x%02x=%s, params:0x%02x)\n", cmd, cmd2str(cmd), param1);
+    DEBUG_PRINT("send_order1(0x%02x=%s, params:%i=0x%02x)\n",
+                cmd, cmd2str(cmd), param1, param1);
     uint8_t value_arr[2] = {cmd, param1};
     return send_order(value_arr, 2);
   }
   inline bool send_order2(uint8_t cmd, uint8_t param1, uint8_t param2) {
-    DEBUG_PRINT("send_order2(0x%02x=%s, params:0x%02x, 0x%02x)\n", cmd, cmd2str(cmd), param1, param2);
+    DEBUG_PRINT("send_order2(0x%02x=%s, params:%i=0x%02x, %i=0x%02x)\n",
+                cmd, cmd2str(cmd), param1, param1, param2, param2);
     uint8_t value_arr[3] = {cmd, param1, param2};
     return send_order(value_arr, 3);
   }
   inline bool send_order3(uint8_t cmd, uint8_t param1, uint8_t param2, uint8_t param3) {
-    DEBUG_PRINT("send_order3(0x%02x=%s, params:0x%02x, 0x%02x, 0x%02x)\n",
-                cmd, cmd2str(cmd), param1, param2, param3);
+    DEBUG_PRINT("send_order3(0x%02x=%s, params:%i=0x%02x, %i=0x%02x, %i=0x%02x)\n",
+                cmd, cmd2str(cmd), param1, param1, param2, param2, param3, param3);
     uint8_t value_arr[4] = {cmd, param1, param2, param3};
     return send_order(value_arr, 4);
   }
   inline bool send_order4(uint8_t cmd, uint8_t param1, uint8_t param2,
                           uint8_t param3, uint8_t param4) {
-    DEBUG_PRINT("send_order4(0x%02x=%s, params:0x%02x, 0x%02x, 0x%02x, 0x%02x)\n",
-                cmd, cmd2str(cmd), param1, param2, param3, param4);
+    DEBUG_PRINT("send_order4(0x%02x=%s, params:%i=0x%02x, %i=0x%02x, %i=0x%02x, %i=0x%02x)\n",
+                cmd, cmd2str(cmd), param1, param1, param2, param2,
+                param3, param3, param4, param4);
     uint8_t value_arr[5] = {cmd, param1, param2, param3, param4};
     return send_order(value_arr, 5);
   }
   inline bool send_order5(uint8_t cmd, uint8_t param1, uint8_t param2,
                           uint8_t param3, uint8_t param4, uint8_t param5) {
-    DEBUG_PRINT("send_order5(0x%02x=%s, params:0x%02x, 0x%02x, 0x%02x, 0x%02x, 0x%02x)\n",
-                cmd, cmd2str(cmd), param1, param2, param3, param4, param5);
+    DEBUG_PRINT("send_order5(0x%02x=%s, params:%i=0x%02x, %i=0x%02x, %i=0x%02x, %i=0x%02x, %i=0x%02x)\n",
+                cmd, cmd2str(cmd), param1, param1, param2, param2, param3, param3,
+                param4, param4, param5, param5);
     uint8_t value_arr[6] = {cmd, param1, param2, param3, param4, param5};
     return send_order(value_arr, 6);
   }
@@ -587,7 +622,7 @@ protected:
   //////////////////////////////////////////////////////////////////////////////
 
   //! clamp a value between boundaries
-  inline static uint clamp(uint x, uint min, uint max) {
+  inline static int clamp(int x, int min, int max) {
     return (x < min ? min : x > max ? max : x);
   }
 

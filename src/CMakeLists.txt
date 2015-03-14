@@ -1,3 +1,4 @@
+### third parties
 # compile libgatt, from https://github.com/jacklund/libgatt
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR})
 find_package( GLIB REQUIRED )
@@ -14,6 +15,10 @@ add_library(libgatt
   #libgatt/src/utils.c
 )
 
+# joystick - https://github.com/drewnoakes/joystick
+add_library(joystick joystick/joystick.cc joystick/joystick.hh)
+
+### our code
 add_executable(gatttoolmip_prompt  gatttoolmip_prompt.cpp mipcommands.h gatttoolmip.h
                                    bluetooth_mac2device.h exec_system_get_output.h)
 target_link_libraries(gatttoolmip_prompt libgatt ${GLIB_LIBRARIES})
