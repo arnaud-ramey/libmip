@@ -3,6 +3,17 @@
                   +----------------------+
 
 libmip is a library for using WoWWee MiP robots in C++ programs.
+It has been designed as a lightweight and easy-to-use library.
+It gives you the possibility to both:
+* send orders to the robot, for instance, move forward or play sounds;
+* read sensors, for instance the proximity sensor or the state of the LED lights.
+
+libmip uses the Bluetooth Low Energy (BTLE, part of Bluetooth 4.0)
+protocol for communication with the robot.
+Your computer might not support it natively, in which case you need to
+use a BTLE dongle.
+Underneath, the Bluetooth commands and orders are structured as GATT operations
+( https://en.wikipedia.org/wiki/Bluetooth_low_energy#GATT_Operations ). 
 
 License :                  see the LICENSE file.
 Authors :                  see the AUTHORS file.
@@ -12,6 +23,24 @@ ________________________________________________________________________________
 
 How to use the program
 ________________________________________________________________________________
-To display the help, just launch the program in a terminal.
-It will display the help of the program.
+Check out the sample executables in the "samples" folder.
+A minimalistic sample using can be:
+
+#include "src/bluetooth_mac2device.h"
+#include "src/gattmip.h"
+int main(int argc, char** argv) {
+  GMainLoop *main_loop = g_main_loop_new(NULL, FALSE);
+  Mip mip;
+  std::string device_mac = (argc >= 2 ? argv[1] : "00:1A:7D:DA:71:11"),
+      mip_mac = (argc >= 3 ? argv[2] : "D0:39:72:B7:AF:66");
+  if (!mip.connect(main_loop, bluetooth_mac2device(device_mac).c_str(), mip_mac.c_str())) {
+    printf("Could not connect with device MAC '%s' to MIP with MAC '%s'!\n",
+           device_mac.c_str(), mip_mac.c_str());
+    return -1;
+  }
+  // now the real stuff
+  mip.distance_drive(.5, 0);
+  mip.pump_up_callbacks();
+  return 0;
+}
 
