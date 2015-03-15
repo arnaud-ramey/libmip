@@ -30,26 +30,27 @@ int main(int argc, char** argv) {
   GMainLoop *main_loop = g_main_loop_new(NULL, FALSE);
   Mip mip;
   std::string device_mac = (argc >= 2 ? argv[1] : "00:1A:7D:DA:71:11"),
-      mip_mac = (argc >= 3 ? argv[2] : "D0:39:72:B7:AF:66");
+      mip_mac = (argc >= 3 ? argv[2] : "D0:39:72:B7:AF:66"),
+      joystick_device = "/dev/input/js0";
   if (!mip.connect(main_loop, bluetooth_mac2device(device_mac).c_str(), mip_mac.c_str())) {
     printf("Could not connect with device MAC '%s' to MIP with MAC '%s'!\n",
            device_mac.c_str(), mip_mac.c_str());
     return -1;
   }
   // Create an instance of Joystick
-  Joystick joystick("/dev/input/js0");
+  Joystick joystick(joystick_device);
   // Ensure that it was found and that we can use it
   if (!joystick.isFound()) {
-    printf("open failed.\n");
+    printf("Connecting to joystick '%s' failed.\n", joystick_device.c_str());
     return -1;
   }
 
   double speed_lin = 0, speed_ang = 0;
-  static const unsigned int MAX_AXIS = 32767;
+  static const unsigned int MAX_AXIS = 32767, MAX_SPEED = 60;
   while (true) {
     // Restrict rate
-    usleep(50E3);
-    mip.continuous_drive(20. * speed_lin, 20. * speed_ang);
+    usleep(25E3);
+    mip.continuous_drive(1. * MAX_SPEED * speed_lin, 20. * MAX_SPEED * speed_ang);
     mip.pump_up_callbacks();
     // Attempt to sample an event from the joystick
     JoystickEvent event;
@@ -62,7 +63,7 @@ int main(int argc, char** argv) {
       speed_lin = -1. * event.value / MAX_AXIS;
     }
     if (event.number == 0 || event.number == 4) { // left=-32767, right=32767
-      speed_ang = 1. * event.value / MAX_AXIS;
+      speed_ang = -1. * event.value / MAX_AXIS;
     }
     printf("speed(v:%f, w:%f)\n", speed_lin, speed_ang);
     //mip.angle_drive(24. * speed_lin, 10. * speed_ang);
