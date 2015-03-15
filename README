@@ -1,8 +1,8 @@
                   +----------------------+
-                  |         mip          |
+                  |       libmip         |
                   +----------------------+
 
-A library for using WoWWee MiP robots in C++ programs.
+libmip is a library for using WoWWee MiP robots in C++ programs.
 
 License :                  see the LICENSE file.
 Authors :                  see the AUTHORS file.

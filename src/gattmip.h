@@ -270,34 +270,6 @@ public:
 
   //////////////////////////////////////////////////////////////////////////////
 
-  /*! \arg speed in 1~64 (-64~1 to go backwards)  */
-  inline bool continuous_drive_linear(double lin_speed) {
-    lin_speed = clamp(lin_speed, -64, 64);
-    if (lin_speed > 32) // 33 ~ 64 => crazy Fw:0x81(slow)~­0xA0(fast) = 129 ~ 160
-      return send_order1(CMD_CONTINUOUS_DRIVE, 96 + lin_speed);
-    if (lin_speed > 0) // 1 ~ 32 => Fw:0x01(slow)~­0x20(fast)
-      return send_order1(CMD_CONTINUOUS_DRIVE, lin_speed);
-    if (lin_speed > -32) // -1 ~ -32 => Bw:0x21(slow)~0x40(fast) = 33 ~ 64
-      return send_order1(CMD_CONTINUOUS_DRIVE, 32 - lin_speed);
-    // -33 -> -64 => crazy Bw:0xA1(slow)~0xC0(fast) = 161 ~ 192
-    return send_order1(CMD_CONTINUOUS_DRIVE, 128 - lin_speed);
-  }
-
-  //////////////////////////////////////////////////////////////////////////////
-
-  /*! \arg speed in 0~64 to turn CCW (-64~0 to turn CW)  */
-  inline bool continuous_drive_angular(double ang_speed) {
-    ang_speed = clamp(ang_speed, -64, 63);
-    if (ang_speed > 32) // 33 ~ 64 => crazy Left spin:0xE1(slow)~0xFF(fast) = 225 - 255
-      return send_order1(CMD_CONTINUOUS_DRIVE, 192 + ang_speed);
-    if (ang_speed > 0) // 1 ~ 32 => Left spin:0x61(slow)~0x80(fast) = 97 ~ 128
-      return send_order1(CMD_CONTINUOUS_DRIVE, 96 + ang_speed);
-    if (ang_speed > -32) // -1 ~ -32 => right spin:0x41(slow)~0x60(fast) = 65 ~ 96
-      return send_order1(CMD_CONTINUOUS_DRIVE, 64 - ang_speed);
-    // -33 -> -64 => crazy right spin:0xC1(slow)~0xE0(fast) = 193 ~ 224
-    return send_order1(CMD_CONTINUOUS_DRIVE, 160 - ang_speed);
-  }
-
   /*!
    *  \arg lin_speed in 1~64 (-64~1 to go backwards)
    *  \arg ang_speed in 0~64 to turn CCW (-64~0 to turn CW)

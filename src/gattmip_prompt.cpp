@@ -33,8 +33,7 @@ void print_help(int argc, char** argv) {
   printf("'dis':  distance_drive                distance_m       angle_rad\n");
   printf("'tim':  time_drive                    speed(-30~30)    time_s(0~1.78)\n");
   printf("'ang':  angle_drive                   speed(-24~24)    angle_rad\n");
-  printf("'cli':  continuous_drive_linear       speed(-64~64)\n");
-  printf("'can':  continuous_drive_angular      speed(-64~64)\n");
+  printf("'con':  continuous_drive              lin_speed(-64~64) ang_speed(-64~64)\n");
   printf("'mod':  get_game_mode\n");
   printf("'sto':  stop\n");
   printf("'sta':  get_status\n");
@@ -89,10 +88,8 @@ int main(int argc, char** argv) {
     printf("retval:%i\n", mip.time_drive(param1, param2));
   else if (choice == "ang" && nparams == 2)
     printf("retval:%i\n", mip.angle_drive(param1, param2));
-  else if (choice == "cli" && nparams == 1)
-    printf("retval:%i\n", mip.continuous_drive_linear(param1));
-  else if (choice == "can" && nparams == 1)
-    printf("retval:%i\n", mip.continuous_drive_angular(param1));
+  else if (choice == "con" && nparams == 1)
+    printf("retval:%i\n", mip.continuous_drive(param1, param2));
   else if (choice == "mod" && nparams == 0) {
     mip.request_game_mode();
     mip.pump_up_callbacks(10);

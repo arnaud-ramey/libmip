@@ -19,13 +19,8 @@ add_library(libgatt
 add_library(joystick joystick/joystick.cc joystick/joystick.hh)
 
 ### our code
-add_executable(gatttoolmip_prompt  gatttoolmip_prompt.cpp mipcommands.h gatttoolmip.h
-                                   bluetooth_mac2device.h exec_system_get_output.h)
-target_link_libraries(gatttoolmip_prompt libgatt ${GLIB_LIBRARIES})
-
 add_executable(gattmip_prompt  gattmip_prompt.cpp mipcommands.h gattmip.h
                                bluetooth_mac2device.h exec_system_get_output.h)
 target_link_libraries(gattmip_prompt libgatt ${GLIB_LIBRARIES})
-
 
 add_subdirectory(samples)
