@@ -13,7 +13,10 @@ protocol for communication with the robot.
 Your computer might not support it natively, in which case you need to
 use a BTLE dongle.
 Underneath, the Bluetooth commands and orders are structured as GATT operations
-( https://en.wikipedia.org/wiki/Bluetooth_low_energy#GATT_Operations ). 
+( https://en.wikipedia.org/wiki/Bluetooth_low_energy#GATT_Operations ).
+
+The commands are based on the MiP BLE protocol, released by WoWWee.
+See https://github.com/WowWeeLabs/MiP-BLE-Protocol
 
 License :                  see the LICENSE file.
 Authors :                  see the AUTHORS file.

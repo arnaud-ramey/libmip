@@ -1,7 +1,8 @@
 \documentclass[a4paper,10pt]{article}
 \usepackage[utf8]{inputenc}
 \usepackage{hyperref}
-\usepackage[margin=1 cm]{geometry}
+\usepackage{graphicx}
+\usepackage[margin=1.5 cm]{geometry}
 \usepackage{helvet} 
 \renewcommand{\familydefault}{\sfdefault}
 
@@ -18,7 +19,7 @@
 }
 
 \newcommand{\link}[1] {\href{#1}{#1}}
-\setlength{\parskip}{5 mm}
+% \setlength{\parskip}{5 mm}
 
 %opening
 \title{WoWWee MiP}
@@ -35,6 +36,14 @@
      {joost.damad.be}
 \href{https://www.safaribooksonline.com/library/view/getting-started-with/9781491900550/ch04.html}
  {safaribooksonline}
+ 
+ \subsection{Discover all primary services}
+\begin{figure}[!ht]
+  \centering
+  \includegraphics[width=8 cm]{gatt_structure.png}
+  \caption{Data structures of GATT}
+\end{figure}
+
 
 \section{Install bluez v5.3}
 TODO
@@ -55,7 +64,7 @@ $ make
 \section{XPeria developer options}
 For people who are facing problems in accessing developer settings here's the trick 
 
-Go to Settings>About phone
+Go to Settings $\rightarrow$ About phone
 
 Tap on the build number 7 times 
 
@@ -91,8 +100,6 @@ Get handles:
 http://www.jaredwolff.com/blog/get-started-with-bluetooth-low-energy/ 
 http://i-miss-erin.blogspot.fr/2010/12/gatttool-in-bluez-over-bredr.html 
 \end{lstlisting}
-
-\subsection{Discover all primary services}
 
 \begin{lstlisting}[language=bash]
 > primary
