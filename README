@@ -18,6 +18,16 @@ Underneath, the Bluetooth commands and orders are structured as GATT operations
 The commands are based on the MiP BLE protocol, released by WoWWee.
 See https://github.com/WowWeeLabs/MiP-BLE-Protocol
 
+The GATT library is libgatt:
+https://github.com/jacklund/libgatt
+This is simply the [BlueZ 5.7](http://www.bluez.org/) GATT/LE
+code extracted into a library
+since they didn't see fit to include it in their bluetooth library).
+
+The koystick sample is powered thanks to the joystick project of drewnoakes:
+https://github.com/drewnoakes/joystick
+It is a minimal C++ object-oriented API onto joystick devices under Linux.
+
 License :                  see the LICENSE file.
 Authors :                  see the AUTHORS file.
 How to build the program:  see the INSTALL file.
