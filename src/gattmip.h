@@ -209,7 +209,7 @@ public:
     g_main_context_iteration(_context, false);
   }
   inline void pump_up_callbacks(unsigned int ntimes) {
-    for (int time = 0; time < ntimes; ++time) {
+    for (unsigned int time = 0; time < ntimes; ++time) {
       pump_up_callbacks();
       usleep(50E3);
     }
@@ -460,7 +460,7 @@ public:
   //////////////////////////////////////////////////////////////////////////////
 
   //! extend this function to add behaviours upon reception of a notification
-  virtual void notification_post_hook(MipCommand cmd, const std::vector<int> & values) {
+  virtual void notification_post_hook(MipCommand /*cmd*/, const std::vector<int> & /*values*/) {
   }
 
 protected:
