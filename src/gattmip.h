@@ -282,7 +282,7 @@ public:
       param1 = 96 + lin_speed;
     else if (lin_speed >= 0) // 1 ~ 32 => Fw:0x01(slow)~­0x20(fast)
       param1 = lin_speed;
-    else if (lin_speed > -32) // -1 ~ -32 => Bw:0x21(slow)~0x40(fast) = 33 ~ 64
+    else if (lin_speed >= -32) // -1 ~ -32 => Bw:0x21(slow)~0x40(fast) = 33 ~ 64
       param1 = 32 - lin_speed;
     else  // -33 -> -64 => crazy Bw:0xA1(slow)~0xC0(fast) = 161 ~ 192
       param1 = 128 - lin_speed;
@@ -294,7 +294,7 @@ public:
       param2 = 96 + ang_speed;
     else if (ang_speed == 0)
       param2 = 0;
-    else if (ang_speed > -32) // -1 ~ -32 => right spin:0x41(slow)~0x60(fast) = 65 ~ 96
+    else if (ang_speed >= -32) // -1 ~ -32 => right spin:0x41(slow)~0x60(fast) = 65 ~ 96
       param2 = 64 - ang_speed;
     else  // -33 -> -64 => crazy right spin:0xC1(slow)~0xE0(fast) = 193 ~ 224
       param2 = 160 - ang_speed;
