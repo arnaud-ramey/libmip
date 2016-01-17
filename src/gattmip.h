@@ -301,6 +301,27 @@ public:
     return send_order2(CMD_CONTINUOUS_DRIVE, param1, param2);
   }
 
+  /*!
+   *  \arg lin_speed in m/s
+   *  \arg ang_speed in rad/s
+  */
+  inline bool continuous_drive_metric(double lin_speed, double ang_speed) {
+    // bLin =  0.50949 45.38459 -0.81221 3.78223
+    int lin = 0.50949
+        + 45.38459 * lin_speed
+        - 0.81221  * ang_speed
+        + 3.78223  * lin_speed * ang_speed;
+    lin = clamp(lin, -32, 32);
+    // bAng =  0.98163 -1.82084 11.69517 0.36455
+    int ang = 0.98163
+        - 1.82084  * lin_speed
+        + 11.69517 * ang_speed
+        + 0.36455  * lin_speed * ang_speed;
+    ang = clamp(ang, -32, 32);
+    return continuous_drive(lin, ang);
+  }
+
+
   //////////////////////////////////////////////////////////////////////////////
 
   //! \see GameMode enum

@@ -93,7 +93,7 @@ int main(int argc, char** argv) {
   else if (choice == "con" && nparams == 3) {
     unsigned int ntimes = param3 / 50.; // a command each 50 ms
     printf("ntimes:%i\n", ntimes);
-    for (int i = 0; i < ntimes; ++i) {
+    for (unsigned int i = 0; i < ntimes; ++i) {
       mip.continuous_drive(param1, param2);
       mip.pump_up_callbacks();
       usleep(50 * 1000);

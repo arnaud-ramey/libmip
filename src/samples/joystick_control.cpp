@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
   Mip mip;
   std::string device_mac = (argc >= 2 ? argv[1] : "00:1A:7D:DA:71:11"),
       mip_mac = (argc >= 3 ? argv[2] : "D0:39:72:B7:AF:66"),
-      joystick_device = "/dev/input/js0";
+      joystick_device = "/dev/input/js1";
   if (!mip.connect(main_loop, bluetooth_mac2device(device_mac).c_str(), mip_mac.c_str())) {
     printf("Could not connect with device MAC '%s' to MIP with MAC '%s'!\n",
            device_mac.c_str(), mip_mac.c_str());
@@ -46,11 +46,11 @@ int main(int argc, char** argv) {
   }
 
   double speed_lin = 0, speed_ang = 0;
-  static const unsigned int MAX_AXIS = 32767, MAX_SPEED = 60;
+  static const double MAX_AXIS = 32767, MAX_SPEED_LIN = 60, MAX_SPEED_ANG = 600;
   while (true) {
     // Restrict rate
     usleep(25E3);
-    mip.continuous_drive(1. * MAX_SPEED * speed_lin, 20. * MAX_SPEED * speed_ang);
+    mip.continuous_drive(MAX_SPEED_LIN * speed_lin, MAX_SPEED_ANG * speed_ang);
     mip.pump_up_callbacks();
     // Attempt to sample an event from the joystick
     JoystickEvent event;
