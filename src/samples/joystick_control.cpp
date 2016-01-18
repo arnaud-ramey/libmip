@@ -62,7 +62,7 @@ int main(int argc, char** argv) {
     if (event.number == 1 || event.number == 5) { // up=-32767, down=32767
       speed_lin = -1. * event.value / MAX_AXIS;
     }
-    if (event.number == 0 || event.number == 4) { // left=-32767, right=32767
+    if (event.number == 2 || event.number == 4) { // left=-32767, right=32767
       speed_ang = -1. * event.value / MAX_AXIS;
     }
     printf("speed(v:%f, w:%f)\n", speed_lin, speed_ang);
