@@ -54,7 +54,7 @@ int main(int argc, char** argv) {
       rotate_in_place_counter = 0;
       double angle_rad = (rand()%2 ? 1. : -1.) * (M_PI_2 + drand48());
       //mip.distance_drive(0, angle_rad); - no radar update
-      mip.angle_drive(15, angle_rad);
+      mip.angle_drive(angle_rad, 15);
     }
     else if (rand()%20 == 0) { // randomly change direction
       //mip.distance_drive(drand48(), angle_rad); - no radar update

@@ -258,14 +258,18 @@ public:
 
   //////////////////////////////////////////////////////////////////////////////
 
-  /*! \arg speed in 0~24 (-24~0 to go backwards)
-   *  \arg angle_rad in radians, > 0 for CCW, < 0 for CW */
-  inline bool angle_drive(double speed, double angle_rad) {
+  /*!
+    \arg angle_rad in radians, -22.25~22.25, > 0 for CCW, < 0 for CW
+    \arg speed in 0~24
+  */
+  inline bool angle_drive(double angle_rad, double speed) {
     // BYTE 1 : Angle in intervals of 5 degrees (0~255) - Angle = Byte1 Value * 5
     int angle_deg = rad2deg_norm(angle_rad, -1275, 1275);
-    if (angle_deg < 0) // CCW
-      return send_order2(0x73, clamp(speed, 0, 24), fabs(angle_deg/5));
-    return send_order2(0x74, clamp(-speed, 0, 24), fabs(angle_deg/5));
+    int speed_clamp = clamp(fabs(speed), 0, 24);
+    return send_order2(
+          (angle_deg < 0 ? 0x73: 0x74), // CCW : CW,
+          fabs(angle_deg/5),
+          speed_clamp);
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -385,8 +389,9 @@ public:
   }
   //! r,g,b in [0, 255],
   inline bool set_chest_LED(const ChestLed & l) {
-    int ton = clamp( (int) (l.time_flash_on_sec * 500), 1, 255);
-    int toff = clamp( (int) (l.time_flash_off_sec * 500), 1, 255);
+    // TIME ON in 10ms intervals
+    int ton = clamp( (int) (l.time_flash_on_sec * 50), 1, 255);
+    int toff = clamp( (int) (l.time_flash_off_sec * 50), 1, 255);
     return send_order5(CMD_FLASH_CHEST_LED, l.r, l.g, l.b, ton, toff);
   }
   //! \return true if the request has been correctly sent to the robot
@@ -503,13 +508,13 @@ protected:
       // 0xD3 = 211 (max) ~ 0xFF = 255 (min) is holding the weight on the front
       // 0x00 = 0 (min) ~ 0x2D = 45 (max) is holding the weight on the back
       // in other words:0 -> 0, 45 -> 45, 255 -> -1, 211 -> -45
-      _weight = (values[0] < 100 ? values[0] : 256 - values[0]);
+      _weight = (values[0] < 100 ? values[0] : values[0] - 256) + 5; // -5° when not moving
     else if (cmd == CMD_MIP_SOFTWARE_VERSION && nvalues == 5) {
       _chest_led.r = values[0];
       _chest_led.g = values[1];
       _chest_led.b = values[2];
-      _chest_led.time_flash_on_sec = values[3];
-      _chest_led.time_flash_off_sec = values[4];
+      _chest_led.time_flash_on_sec = values[3] * 20E-3; // step of 50 ms
+      _chest_led.time_flash_off_sec = values[4] * 20E-3;
     }
     else if (cmd == CMD_HEAD_LED && nvalues == 4) {
       _head_led.l1 = values[0];
@@ -523,9 +528,9 @@ protected:
       // 1 cm=48.5 units,
       // 0xFFFFFFFF=4294967295=88556026.7cm
       double value = values[3]
-                     + 255 * values[2]
-                     + 255 * 255 * values[1]
-                     + 255 * 255 * 255 * values[0];
+          + 255 * values[2]
+          + 255 * 255 * values[1]
+          + 255 * 255 * 255 * values[0];
       double dist_cm = value / 48.5;
       _odometer_reading_m = dist_cm * .01;
     }

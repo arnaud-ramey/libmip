@@ -66,7 +66,7 @@ int main(int argc, char** argv) {
       speed_ang = -1. * event.value / MAX_AXIS;
     }
     printf("speed(v:%f, w:%f)\n", speed_lin, speed_ang);
-    //mip.angle_drive(24. * speed_lin, 10. * speed_ang);
+    //mip.angle_drive(10. * speed_ang, 24. * speed_lin);
     //mip.distance_drive(10. * speed_lin, 10. * speed_ang);
   } // end while()
   return 0;

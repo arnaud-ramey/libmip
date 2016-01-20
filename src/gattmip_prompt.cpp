@@ -27,13 +27,13 @@ A standalone prompt to test the MIP library.
 #include "bluetooth_mac2device.h"
 #include <iostream>
 
-void print_help(int argc, char** argv) {
+void print_help(int /*argc*/, char** argv) {
   printf("Synopsis: %s CMD PARAM\n", argv[0]);
   printf("'sou':  play_sound                    sound_idx(1~106)\n");
   printf("'dis':  distance_drive                distance_m       angle_rad\n");
   printf("'tim':  time_drive                    speed(-30~30)    time_s(0~1.78)\n");
-  printf("'ang':  angle_drive                   speed(-24~24)    angle_rad\n");
-  printf("'con':  continuous_drive              lin_speed(-64~64) ang_speed(-64~64) [time ms]\n");
+  printf("'ang':  angle_drive                   angle_rad(-22.25~22.25) speed(0~24)\n");
+  printf("'con':  continuous_drive              lin_speed(-64~64)       ang_speed(-64~64) [time ms]\n");
   printf("'mod':  get_game_mode\n");
   printf("'sto':  stop\n");
   printf("'sta':  get_status\n");
@@ -193,7 +193,7 @@ int main(int argc, char** argv) {
     print_help(argc, argv);
 
   // ensure order was sent
-  mip.pump_up_callbacks();
+  mip.pump_up_callbacks(10);
   return 0;
 }
 
