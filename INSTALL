@@ -6,7 +6,9 @@ You need the following libraries before compiling :
  * cmake  ( sudo apt-get install cmake )
  * glib   ( sudo apt-get install libglib2.0-dev )
  * bluez  ( sudo apt-get install libbluetooth-dev )
-
+ * curses ( sudo apt-get install -y libncurses5-dev )
+ * rfkill ( sudo apt-get install -y rfkill )
+  
 ________________________________________________________________________________
 
 How to build the program
