@@ -84,7 +84,8 @@ class Mip {
 public:
   //! a minimalistic data structure for chest led info
   struct ChestLed {
-    int r, g, b, time_flash_on_sec, time_flash_off_sec;
+    int r, g, b;
+    double time_flash_on_sec, time_flash_off_sec;
     inline std::string to_string() const {
       std::ostringstream out;
       out << '(' << r << ',' << g << ',' << b << "), flash:on"
@@ -385,14 +386,25 @@ public:
 
   //! r,g,b in [0, 255]
   inline bool set_chest_LED(const int & r, const int & g, const int & b) {
-    return send_order3(CMD_SET_CHEST_LED, r, g, b);
+    return send_order3(CMD_SET_CHEST_LED,
+                       clamp(r, 0, 255),
+                       clamp(g, 0, 255),
+                       clamp(b, 0, 255));
   }
   //! r,g,b in [0, 255],
-  inline bool set_chest_LED(const ChestLed & l) {
+  inline bool set_chest_LED(const int & r, const int & g, const int & b,
+                            const double & time_flash_on_sec,
+                            const double & time_flash_off_sec) {
     // TIME ON in 10ms intervals
-    int ton = clamp( (int) (l.time_flash_on_sec * 50), 1, 255);
-    int toff = clamp( (int) (l.time_flash_off_sec * 50), 1, 255);
-    return send_order5(CMD_FLASH_CHEST_LED, l.r, l.g, l.b, ton, toff);
+    return send_order5(CMD_FLASH_CHEST_LED,
+                       clamp(r, 0, 255),
+                       clamp(g, 0, 255),
+                       clamp(b, 0, 255),
+                       clamp( (int) (time_flash_on_sec * 50), 1, 255),
+                       clamp( (int) (time_flash_off_sec * 50), 1, 255));
+  }
+  inline bool set_chest_LED(const ChestLed & l) {
+    return set_chest_LED(l.r, l.g, l.b, l.time_flash_on_sec, l.time_flash_off_sec);
   }
   //! \return true if the request has been correctly sent to the robot
   inline bool request_chest_LED() { return send_order0(0x83); }
