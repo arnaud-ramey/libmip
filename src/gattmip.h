@@ -414,8 +414,17 @@ public:
   //////////////////////////////////////////////////////////////////////////////
 
   //! \param HeadLed l: for each of the four leds, 0=off,1=on,2=blink_slow,3=blink_fast
+  inline bool set_head_LED(const unsigned int l1, const unsigned int l2,
+                           const unsigned int l3, const unsigned int l4) {
+    return send_order4(CMD_SET_HEAD_LED,
+                       clamp(l1, 0, 3),
+                       clamp(l2, 0, 3),
+                       clamp(l3, 0, 3),
+                       clamp(l4, 0, 3));
+  }
+  //! \param HeadLed l: for each of the four leds, 0=off,1=on,2=blink_slow,3=blink_fast
   inline bool set_head_LED(const HeadLed & l) {
-    return send_order4(CMD_SET_HEAD_LED, l.l1, l.l2, l.l3, l.l4);
+    return set_head_LED(l.l1, l.l2, l.l3, l.l4);
   }
   //! \return true if the request has been correctly sent to the robot
   inline bool request_head_LED() { return send_order0(CMD_HEAD_LED); }
