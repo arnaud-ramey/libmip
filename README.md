@@ -11,7 +11,8 @@ It gives you the possibility to both:
 Supported hardware
 ==================
 
-The library is developed for the original WowWee MiP.
+The library is developed for the original
+[WoWWee MiP](http://wowwee.com/mip).
 
 Supported functionalities
 =========================
