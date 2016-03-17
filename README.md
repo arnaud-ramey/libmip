@@ -1,5 +1,10 @@
 # `libmip`
 
+<p align="center">
+<img src="https://github.com/arnaud-ramey/libmip/raw/master/doc/MiP.png"
+   alt="MiP" style="width: 300px"/>
+</p>
+
 `libmip` is a library for using
 [WoWWee MiP](http://wowwee.com/mip) robots in C++ programs.
 It has been designed as a lightweight and easy-to-use library.
