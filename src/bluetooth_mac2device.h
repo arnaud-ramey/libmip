@@ -35,12 +35,6 @@ Convert a bluetooth device MAC address, for instance "00:11:22:33:44:55",
  * \brief bluetooth_mac2device
  * \param mac_address
  *    the MAC address of the device we want to use.
- *
- *    You can obtain the list of devices by running in a terminal
- *  $ hciconfig -a
- *    The Bluetooth Low Energy (BTLE) devices use Bluetooth 4.0 and
- *    can be identified by the line
- *    "HCI Version: 4.0"
  * \return the device name of the device with the given MAC,
  *    or "" if the device does not exist.
  */

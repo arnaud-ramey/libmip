@@ -27,34 +27,6 @@ Cf https://github.com/WowWeeLabs/MiP-BLE-Protocol/blob/master/MiP-Protocol.md
 
 This implementation is based on the Bluetooth Low Energy (BTLE) protocol,
 and wraps C GATT commands, such as gatt_connect() and gatt_write_cmd().
-
-A sample application could be:
-////////////////////////////////////////////////////////////////////////////////
-int main() {
-  GMainLoop *main_loop = g_main_loop_new(NULL, FALSE);
-  Mip mip;
-  mip.connect(main_loop, bluetooth_mac2device(YOUR_DEVICE_MAC).c_str(), YOUR_MIP_MAC);
-  g_main_loop_run(main_loop);
-  g_main_loop_unref(main_loop);
-  return 0;
-}
-////////////////////////////////////////////////////////////////////////////////
-
-Or, for doing stuff in the main loop
-(thanks // https://stackoverflow.com/questions/23737750/glib-usage-without-mainloop):
-////////////////////////////////////////////////////////////////////////////////
-int main() {
-  GMainLoop *main_loop = g_main_loop_new(NULL, FALSE);
-  Mip mip;
-  mip.connect(main_loop, bluetooth_mac2device(YOUR_DEVICE_MAC).c_str(), YOUR_MIP_MAC);
-  for (int i = 0; i < 10; ++i) { // iterate a few times to connect well
-    // ... call Mip functions here
-    mip.pump_up_callbacks();
-    usleep(50E3);
-  }
-  return 0;
-}
-////////////////////////////////////////////////////////////////////////////////
  */
 #ifndef Mip_H
 #define Mip_H
@@ -353,7 +325,7 @@ public:
   inline bool request_battery_voltage() { return send_order0(CMD_MIP_STATUS); }
   //! between 4.0V and 6.4V, or < 0 if error
   inline double get_battery_voltage() { return _battery_voltage; }
-  //! in 0-100, or -1 if error
+  //! in 0~100, or < 0 if error
   inline int get_battery_percentage() {
     double voltage = get_battery_voltage();
     return (voltage < 0 ? ERROR : (voltage-4.0) / 2.4 * 100);
