@@ -96,6 +96,7 @@ public:
     // default values
     _handle_read = 0x000e;
     _handle_write = 0x13;
+    _nattrib = 0;
     // default values
     _volume = ERROR;
     _game_mode = ERROR;
@@ -174,18 +175,6 @@ public:
     }
     DEBUG_PRINT("gatt_connect('%s'->'%s') succesful\n", device_name, mip_mac);
     return true;
-  }
-
-  //////////////////////////////////////////////////////////////////////////////
-
-  inline void pump_up_callbacks() {
-    g_main_context_iteration(_context, false);
-  }
-  inline void pump_up_callbacks(unsigned int ntimes) {
-    for (unsigned int time = 0; time < ntimes; ++time) {
-      pump_up_callbacks();
-      usleep(50E3);
-    }
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -559,13 +548,32 @@ protected:
 
   //////////////////////////////////////////////////////////////////////////////
 
+  inline bool pump_up_callbacks() {
+    return g_main_context_iteration(_context, false);
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+
   //! low-level GATT order send
   inline bool send_order(uint8_t *value, int vlen) {
-    return gatt_write_cmd(_attrib, _handle_write, value, vlen,
-                          NULL,
-                          // Mip::notify_cb,
-                          this);
+    bool ok = false;
+    // the return value of gatt_write_cmd() should be equal to the number of commands sent
+    ++_nattrib;
+    unsigned int retval = gatt_write_cmd(_attrib, _handle_write, value, vlen,
+                                         NULL, this);
+    //Mip::notify_cb, &_nattrib);
+    //printf("retval:%i\n", retval);
+    ok = (retval == _nattrib);
+    ok = ok && pump_up_callbacks();
+    return ok;
   }
+
+  // g_attrib_send(attrib, 0, buf, plen, NULL, user_data, notify);
+  // evt->notify(evt->user_data);
+  //  static void notify_cb(void*val) {
+  //    int retval = ((int*) val)[0];
+  //    printf("notify_cb(%i)\n", retval);
+  //  }
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -713,6 +721,7 @@ protected:
 
   //! GLib stuff
   GAttrib *_attrib;
+  unsigned int _nattrib;
   GMainLoop *_main_loop;
   GMainContext * _context;
   bool _is_connected;

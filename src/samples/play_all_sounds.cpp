@@ -41,7 +41,6 @@ int main(int argc, char** argv) {
   while(sound_idx < 110) {
     printf("sound_idx:%i\n", sound_idx);
     mip.play_sound(sound_idx);
-    mip.pump_up_callbacks();
     ++sound_idx;
     sleep(1);
   }

@@ -37,10 +37,8 @@ int main(int argc, char** argv) {
   // now the real stuff
   for (int side = 0; side < 4; ++side) {
     mip.distance_drive(.5, 0);
-    mip.pump_up_callbacks();
     sleep(2);
     mip.distance_drive(0, M_PI_2);
-    mip.pump_up_callbacks();
     sleep(2);
   }
   return 0;

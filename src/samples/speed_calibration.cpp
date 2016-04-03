@@ -52,7 +52,6 @@ private:
 
 inline double get_odometry_safe(Mip & mip) {
   mip.request_odometer_reading();
-  mip.pump_up_callbacks(5);
   double odom = mip.get_odometer_reading();
   if (odom == ERROR) {
     printf("Could not get odometry!\n");
@@ -93,7 +92,6 @@ int main(int argc, char** argv) {
   cbreak();
   while(getch() <= 0) {
     mip.continuous_drive(lin_speedi, ang_speedi);
-    mip.pump_up_callbacks();
     usleep(50 * 1000);
   }
   endwin();

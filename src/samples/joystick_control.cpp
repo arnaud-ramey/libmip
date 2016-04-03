@@ -51,7 +51,6 @@ int main(int argc, char** argv) {
     // Restrict rate
     usleep(25E3);
     mip.continuous_drive(MAX_SPEED_LIN * speed_lin, MAX_SPEED_ANG * speed_ang);
-    mip.pump_up_callbacks();
     // Attempt to sample an event from the joystick
     JoystickEvent event;
     if (!joystick.sample(&event))

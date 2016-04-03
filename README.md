@@ -1,8 +1,7 @@
 # `libmip`
 
 <p align="center">
-<img src="https://github.com/arnaud-ramey/libmip/raw/master/doc/MiP.png"
-   alt="MiP" style="width: 300px"/>
+<img src="doc/MiP.png" alt="MiP" style="width: 300px"/>
 </p>
 
 `libmip` is a library for using
@@ -128,7 +127,6 @@ int main(int argc, char** argv) {
   }
   // now the real stuff
   mip.distance_drive(.5, 0);
-  mip.pump_up_callbacks();
   return 0;
 }
 ```
@@ -143,7 +141,6 @@ int main() {
   mip.connect(main_loop, bluetooth_mac2device(YOUR_DEVICE_MAC).c_str(), YOUR_MIP_MAC);
   for (int i = 0; i < 10; ++i) { // iterate a few times to connect well
     // ... call Mip functions here
-    mip.pump_up_callbacks();
     usleep(50E3);
   }
   return 0;

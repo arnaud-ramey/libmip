@@ -37,9 +37,7 @@ int main(int argc, char** argv) {
   }
   // now the real stuff
   mip.set_gesture_or_radar_mode(GESTUREOFF_RADARON);
-  mip.pump_up_callbacks(10);
   mip.request_gesture_or_radar_mode();
-  mip.pump_up_callbacks(10);
   printf("gesture_or_radar_mode:%i = '%s'\n",
          mip.get_gesture_or_radar_mode(),
          mip.get_gesture_or_radar_mode2str());
@@ -60,7 +58,6 @@ int main(int argc, char** argv) {
       //mip.distance_drive(drand48(), angle_rad); - no radar update
       mip.time_drive(10 + rand()%10, 2);
     }
-    mip.pump_up_callbacks();
     usleep(50E3);
   }
   return 0;
