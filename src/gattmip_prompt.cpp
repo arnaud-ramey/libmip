@@ -73,11 +73,6 @@ int main(int argc, char** argv) {
     return -1;
   }
 
-  mip.play_sound(10);
-  mip.play_sound(11);
-  sleep(1);
-  exit(0);
-
   std::string choice = argv[1];
   unsigned int nparams = argc - 2;
   double param1 = (argc >= 3 ? atof(argv[2]) : -1);
@@ -105,22 +100,26 @@ int main(int argc, char** argv) {
   }
   else if (choice == "mod" && nparams == 0) {
     mip.request_game_mode();
+    mip.pump_up_callbacks(5);
     printf("game_mode:%i = '%s'\n", mip.get_game_mode(), mip.get_game_mode2str());
   }
   else if (choice == "sto" && nparams == 0)
     printf("retval:%i\n", mip.stop());
   else if (choice == "sta" && nparams == 0) {
     mip.request_status();
+    mip.pump_up_callbacks(5);
     printf("status:%i = '%s'\n", mip.get_status(), mip.get_status2str());
   }
   else if (choice == "up" && nparams == 0)
     mip.up();
   else if (choice == "wei" && nparams == 0) {
     mip.request_weight_update();
+    mip.pump_up_callbacks(5);
     printf("weight:%i\n", mip.get_weight_update());
   }
   else if (choice == "cled" && nparams == 0) {
     mip.request_chest_LED();
+    mip.pump_up_callbacks(5);
     printf("chest_led:%s\n", mip.get_chest_LED().to_string().c_str());
   }
   else if (choice == "cled" && nparams == 3) {
@@ -137,6 +136,7 @@ int main(int argc, char** argv) {
   }
   else if (choice == "hled" && nparams == 0) {
     mip.request_head_LED();
+    mip.pump_up_callbacks(5);
     printf("head_led:%s\n", mip.get_head_LED().to_string().c_str());
   }
   else if (choice == "hled" && nparams == 4) {
@@ -149,12 +149,14 @@ int main(int argc, char** argv) {
   }
   else if (choice == "odo" && nparams == 0) {
     mip.request_odometer_reading();
+    mip.pump_up_callbacks(5);
     printf("odometer:%f\n", mip.get_odometer_reading());
   }
   else if (choice == "ges" && nparams == 0)
     printf("gesture:%i = '%s'\n", mip.get_gesture_detect(), mip.get_gesture_detect2str());
   else if (choice == "gmod" && nparams == 0) {
     mip.request_gesture_or_radar_mode();
+    mip.pump_up_callbacks(5);
     printf("gesture_or_radar_mode:%i = '%s'\n",
            mip.get_gesture_or_radar_mode(),
            mip.get_gesture_or_radar_mode2str());
@@ -166,18 +168,22 @@ int main(int argc, char** argv) {
            mip.get_radar_response(), mip.get_radar_response2str());
   else if (choice == "bat" && nparams == 0) {
     mip.request_battery_voltage();
+    mip.pump_up_callbacks(5);
     printf("battery:%fV = %i%%\n", mip.get_battery_voltage(), mip.get_battery_percentage());
   }
   else if (choice == "sve" && nparams == 0) {
     mip.request_software_version();
+    mip.pump_up_callbacks(5);
     printf("software version:'%s'\n", mip.get_software_version().c_str());
   }
   else if (choice == "hve" && nparams == 0) {
     mip.request_hardware_version();
+    mip.pump_up_callbacks(5);
     printf("hardware version:'%s'\n", mip.get_hardware_version().c_str());
   }
   else if (choice == "vol" && nparams == 0) {
     mip.request_volume();
+    mip.pump_up_callbacks(5);
     printf("volume:%i\n", mip.get_volume());
   }
   else if (choice == "vol" && nparams == 1)

@@ -98,6 +98,7 @@ public:
     _handle_write = 0x13;
     _nattrib = 0;
     // default values
+    _last_v_ticks = _last_w_ticks = 0;
     _volume = ERROR;
     _game_mode = ERROR;
     _battery_voltage = ERROR;
@@ -237,56 +238,136 @@ public:
   //////////////////////////////////////////////////////////////////////////////
 
   /*!
-   *  \arg lin_speed in 1~64 (-64~1 to go backwards)
-   *  \arg ang_speed in 0~64 to turn CCW (-64~0 to turn CW)
+   *  \arg v_ticks in 1~64 (-64~1 to go backwards)
+   *  \arg w_ticks in 0~64 to turn CCW (-64~0 to turn CW)
   */
-  inline bool continuous_drive(double lin_speed, double ang_speed) {
-    printf("continuous_drive(%g, %g)\n", lin_speed, ang_speed);
-    int param1, param2;
-    lin_speed = (int) clamp(lin_speed, -64, 64);
-    if (lin_speed > 32) // 33 ~ 64 => crazy Fw:0x81(slow)~­0xA0(fast) = 129 ~ 160
-      param1 = 96 + lin_speed;
-    else if (lin_speed >= 0) // 1 ~ 32 => Fw:0x01(slow)~­0x20(fast)
-      param1 = lin_speed;
-    else if (lin_speed >= -32) // -1 ~ -32 => Bw:0x21(slow)~0x40(fast) = 33 ~ 64
-      param1 = 32 - lin_speed;
-    else  // -33 -> -64 => crazy Bw:0xA1(slow)~0xC0(fast) = 161 ~ 192
-      param1 = 128 - lin_speed;
+  inline bool continuous_drive(int v_ticks, int w_ticks,
+                               bool force_decelerating = true) {
+    printf("continuous_drive(%i, %i)\n", v_ticks, w_ticks);
+    if (force_decelerating
+        && fabs(v_ticks) < fabs(_last_v_ticks))// force decelerating
+      continuous_drive(-v_ticks, w_ticks, false);
+    else if (force_decelerating
+             && fabs(w_ticks) < fabs(_last_w_ticks))// force decelerating
+      continuous_drive(v_ticks, -w_ticks, false);
+    _last_v_ticks = v_ticks;
+    _last_w_ticks = w_ticks;
 
-    ang_speed = (int) clamp(ang_speed, -64, 63);
-    if (ang_speed > 32) // 33 ~ 64 => crazy Left spin:0xE1(slow)~0xFF(fast) = 225 - 255
-      param2 = 192 + ang_speed;
-    else if (ang_speed > 0) // 1 ~ 32 => Left spin:0x61(slow)~0x80(fast) = 97 ~ 128
-      param2 = 96 + ang_speed;
-    else if (ang_speed == 0)
+    int param1, param2;
+    v_ticks = clamp(v_ticks, -64, 64);
+    if (v_ticks > 32) // 33 ~ 64 => crazy Fw:0x81(slow)~­0xA0(fast) = 129 ~ 160
+      param1 = 96 + v_ticks;
+    else if (v_ticks >= 0) // 1 ~ 32 => Fw:0x01(slow)~­0x20(fast)
+      param1 = v_ticks;
+    else if (v_ticks >= -32) // -1 ~ -32 => Bw:0x21(slow)~0x40(fast) = 33 ~ 64
+      param1 = 32 - v_ticks;
+    else  // -33 -> -64 => crazy Bw:0xA1(slow)~0xC0(fast) = 161 ~ 192
+      param1 = 128 - v_ticks;
+
+    w_ticks = clamp(w_ticks, -64, 63);
+    if (w_ticks > 32) // 33 ~ 64 => crazy Left spin:0xE1(slow)~0xFF(fast) = 225 - 255
+      param2 = 192 + w_ticks;
+    else if (w_ticks > 0) // 1 ~ 32 => Left spin:0x61(slow)~0x80(fast) = 97 ~ 128
+      param2 = 96 + w_ticks;
+    else if (w_ticks == 0)
       param2 = 0;
-    else if (ang_speed >= -32) // -1 ~ -32 => right spin:0x41(slow)~0x60(fast) = 65 ~ 96
-      param2 = 64 - ang_speed;
+    else if (w_ticks >= -32) // -1 ~ -32 => right spin:0x41(slow)~0x60(fast) = 65 ~ 96
+      param2 = 64 - w_ticks;
     else  // -33 -> -64 => crazy right spin:0xC1(slow)~0xE0(fast) = 193 ~ 224
-      param2 = 160 - ang_speed;
+      param2 = 160 - w_ticks;
     return send_order2(CMD_CONTINUOUS_DRIVE, param1, param2);
   }
 
   /*!
-   *  \arg lin_speed in m/s
-   *  \arg ang_speed in rad/s
+   *  \arg v_ticks in m/s
+   *  \arg w_ticks in rad/s
   */
-  inline bool continuous_drive_metric(double lin_speed, double ang_speed) {
-    // bLin =  0.50949 45.38459 -0.81221 3.78223
-    int lin = 0.50949
-        + 45.38459 * lin_speed
-        - 0.81221  * ang_speed
-        + 3.78223  * lin_speed * ang_speed;
-    lin = clamp(lin, -32, 32);
-    // bAng =  0.98163 -1.82084 11.69517 0.36455
-    int ang = 0.98163
-        - 1.82084  * lin_speed
-        + 11.69517 * ang_speed
-        + 0.36455  * lin_speed * ang_speed;
-    ang = clamp(ang, -32, 32);
-    return continuous_drive(lin, ang);
+  inline bool continuous_drive_metric(double v_ms, double w_rads) {
+    int v_ticks, w_ticks;
+    if (!speed2ticks(v_ms, w_rads, v_ticks, w_ticks))
+      return false;
+    return continuous_drive(v_ticks, w_ticks);
   }
 
+  //////////////////////////////////////////////////////////////////////////////
+  //! https://stackoverflow.com/questions/1903954/is-there-a-standard-sign-function-signum-sgn-in-c-c
+  template <typename T> static int signum(const T & val) {
+    return (val >= T(0)? 1 : -1);
+  }
+
+  static bool speed2ticks(const double & v_ms, const double & w_rads,
+                          int & v_ticks, int & w_ticks) {
+    if (fabs(v_ms) > .95 || fabs(w_rads) > 17) {
+      printf("(v:%g, w:%g) out of bounds!\n", v_ms, w_rads);
+      return false;
+    }
+    // first case: linear speed only
+    if (fabs(w_rads) < 0.05) {
+      w_ticks = 0;
+      if (fabs(v_ms) < 0.05)
+        v_ticks = 0;
+      else if (fabs(v_ms) < 0.7) // NORMAL: v = 0.0217453422621 * b1
+        v_ticks = clamp(45.98685952820811545096 * v_ms, -32, 32);
+      else // CRAZY: v = 0.0290682838088 * b1
+        v_ticks = clamp(34.40175576162719827641 * v_ms, -32, 32) + 32 * signum(v_ms);
+    }
+    // second case: angular speed only
+    else if (fabs(v_ms) < 0.05) {
+      v_ticks = 0;
+      if (fabs(w_rads) < 0.05)
+        w_ticks = 0;
+      else if (fabs(w_rads) < 13) // NORMAL: w = 0.4177416860037 * b2 - 0.6876060987078
+        w_ticks = clamp(2.39382382344084006941 * w_rads + 1.6460078602299454762, -32, 32);
+      else // CRAZY: W = 0.7208400618386 * b2 + 0.0191642762841
+        w_ticks = clamp(1.38727028773812161461 * w_rads - 0.02658603107493626709, -32, 32)
+            + 32 * signum(w_rads);
+    }
+    // third case: combined (v, w): if possible, use "safe" speeds, in [-32 32]
+    else if (fabs(v_ms) <= .65) {
+      // bLin =  0.50949  45.38459  -0.81221  3.78223
+      v_ticks = 0.50949
+          + 45.38459 * v_ms
+          - 0.81221  * w_rads
+          + 3.78223  * v_ms * w_rads;
+      v_ticks = clamp(v_ticks, -32, 32);
+      // bAng =  0.98163 -1.82084 11.69517 0.36455
+      w_ticks = 0.98163
+          - 1.82084  * v_ms
+          + 11.69517 * w_rads
+          + 0.36455  * v_ms * w_rads;
+      w_ticks = clamp(w_ticks, -32, 32);
+    }
+    else { // fourth case: combined (v, w):
+      //   use crazy speeds with first order regression tick=f(speed), in [-64, 64]:
+      // v = 0,0290682838088 * b1
+      v_ticks = clamp(v_ms / .0290682838088, -32, 32);
+      v_ticks += 32 * signum(v_ticks);
+      // W = 0,7208400618386 * b2 + 0,0191642762841
+      //w_ticks = clamp((w_rads - 0.0191642762841) /  .7208400618386, -32, 32);
+      w_ticks = clamp((w_rads - 0.0191642762841) /  .1, -32, 32);
+      w_ticks += 32 * signum(w_ticks);
+    }
+
+    printf("speed2ticks(%g, %g) -> (%i, %i)\n", v_ms, w_rads, v_ticks, w_ticks);
+    return true;
+  } // end speed2ticks
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  static bool ticks2speeds(const int & v_ticks, const int & w_ticks,
+                           double & v_ms, double & w_rads) {
+    // v in [-32, 32]: v = 0,0217453422621 * b1
+    if (abs(v_ticks) <= 32)
+      v_ms = 0.0217453422621 * v_ticks;
+    else // v in [-64, 64]: v = 0,0290682838088 * b1
+      v_ms = 0.0290682838088 * (v_ticks + 32 * signum<int>(v_ticks));
+    // w in [-32, 32]: w = 0,4177416860037 * b2 - 0,6876060987078
+    if (abs(w_ticks) <= 32)
+      w_rads = 0.4177416860037 * w_ticks - .6876060987078;
+    else // w in [-64, 64]: W = 0,7208400618386 * b2 + 0,0191642762841
+      w_rads = 0.7208400618386 * (w_ticks + 32 * signum(w_ticks)) + .0191642762841;
+    return true;
+  }
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -471,6 +552,19 @@ public:
   virtual void notification_post_hook(MipCommand /*cmd*/, const std::vector<int> & /*values*/) {
   }
 
+  //////////////////////////////////////////////////////////////////////////////
+
+  inline bool pump_up_callbacks() {
+    return g_main_context_iteration(_context, false);
+  }
+  inline bool pump_up_callbacks(unsigned int ntimes) {
+    for (unsigned int i = 0; i < ntimes; ++i) {
+      pump_up_callbacks();
+      usleep(50 * 1000);
+    }
+    return true;
+  }
+
 protected:
 
   //////////////////////////////////////////////////////////////////////////////
@@ -548,12 +642,6 @@ protected:
 
   //////////////////////////////////////////////////////////////////////////////
 
-  inline bool pump_up_callbacks() {
-    return g_main_context_iteration(_context, false);
-  }
-
-  //////////////////////////////////////////////////////////////////////////////
-
   //! low-level GATT order send
   inline bool send_order(uint8_t *value, int vlen) {
     bool ok = false;
@@ -564,6 +652,10 @@ protected:
     //Mip::notify_cb, &_nattrib);
     //printf("retval:%i\n", retval);
     ok = (retval == _nattrib);
+    if (retval != _nattrib) {
+      printf("gattmip: command %i='%s' did not return expected value!\n",
+             value[0], cmd2str(value[0]));
+    }
     ok = ok && pump_up_callbacks();
     return ok;
   }
@@ -729,6 +821,8 @@ protected:
   int _handle_read, _handle_write;
   //! in 0-7
   unsigned int _volume;
+  //! buffers for continuous_drive()
+  int _last_v_ticks, _last_w_ticks;
   //! \see GameMode enum
   GameMode _game_mode;
   //! between 4.0V and 6.4V, or < 0 if error

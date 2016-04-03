@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
   }
 
   double speed_lin = 0, speed_ang = 0;
-  static const double MAX_AXIS = 32767, MAX_SPEED_LIN = 60, MAX_SPEED_ANG = 600;
+  static const double MAX_AXIS = 32767, MAX_SPEED_LIN = 32, MAX_SPEED_ANG = 32;
   while (true) {
     // Restrict rate
     usleep(25E3);
@@ -55,6 +55,9 @@ int main(int argc, char** argv) {
     JoystickEvent event;
     if (!joystick.sample(&event))
       continue;
+    //if (event.isButton()) printf("Button %i\n", event.number);
+    if (event.isButton() && event.number == 7)
+      mip.stop();
     if (!event.isAxis())
       continue;
     printf("Axis %u is at position %d\n", event.number, event.value);

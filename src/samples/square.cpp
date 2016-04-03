@@ -35,6 +35,23 @@ int main(int argc, char** argv) {
     return -1;
   }
   // now the real stuff
+#if 0
+  for (int speed = 10; speed <= 30; speed+=20) {
+    for (unsigned int i = 0; i < 20; ++i) {
+      mip.continuous_drive(speed, 0);
+      usleep(50*1000);
+    }
+  }
+  for (int speed = 30; speed >= 0; speed-=10) {
+    for (unsigned int i = 0; i < 30; ++i) {
+      mip.continuous_drive(speed, 0);
+      usleep(50*1000);
+    }
+  }
+  return 0;
+#endif
+
+
   for (int side = 0; side < 4; ++side) {
     mip.distance_drive(.5, 0);
     sleep(2);
