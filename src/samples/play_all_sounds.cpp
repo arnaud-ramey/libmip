@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
     return -1;
   }
   // now the real stuff
-  mip.set_volume(5);
+  //mip.set_volume(5);
   unsigned int sound_idx = 1;
   while(sound_idx < 110) {
     printf("sound_idx:%i\n", sound_idx);
