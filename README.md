@@ -1,6 +1,6 @@
 # `libmip`
 
-[![Build Status](https://travis-ci.org/arnaud-ramey/mip.svg)](https://travis-ci.org/arnaud-ramey/mip)
+[![Build Status](https://travis-ci.org/arnaud-ramey/libmip.svg)](https://travis-ci.org/arnaud-ramey/libmip)
 
 <p align="center">
 <img src="doc/MiP.png" alt="MiP" style="width: 300px"/>
