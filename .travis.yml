@@ -1,0 +1,13 @@
+language: cpp
+compiler:
+  - gcc
+
+before_install:
+  - sudo apt-get -qq update
+  - sudo apt-get install -y libglib2.0-dev libbluetooth-dev libncurses5-dev rfkill
+
+script:
+  - mkdir build
+  - cd build
+  - cmake ..
+  - make

@@ -184,7 +184,7 @@ public:
   inline bool play_sound(uint sound_idx) {
     DEBUG_PRINT("play_sound(%i)\n", sound_idx);
     // sudo gatttool -­i hci1 ­-b D0:39:72:B7:AF:66 --char­-write­ -a 0x0013 -n 0602
-    return send_order1(CMD_PLAY_SOUND, clamp(sound_idx, 1, 106));
+    return send_order1(CMD_PLAY_SOUND, clamp(sound_idx, (uint) 1, (uint) 106));
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -195,7 +195,7 @@ public:
     bool backward = (distance_m < 0);
     int angle_deg = rad2deg_norm(angle_rad, -360, 360);
     bool ccw = (angle_deg < 0);
-    int distance_cm = clamp(fabs(distance_m*100.), 0, 255);
+    int distance_cm = clamp((int) fabs(distance_m*100.), 0, 255);
     DEBUG_PRINT("distance_cm:%i, angle_deg:%i\n", distance_cm, angle_deg);
     // BYTE 1 : Forward: 0X00 or Backward: 0X01
     // BYTE 2 : Distance (cm): 0x00­0xFF
@@ -210,8 +210,8 @@ public:
 
   /*! \arg speed in 0~30 (-30~0 to go backwards)
    *  \arg time_s in seconds, in (0~1.78) */
-  inline bool time_drive(double speed, double time_s) {
-    int time_7ms = clamp(time_s * 1000/7, 0, 255);
+  inline bool time_drive(int speed, double time_s) {
+    int time_7ms = clamp((int) (time_s * 1000/7), 0, 255);
     if (speed > 0)
       return send_order2(CMD_DRIVE_FORWARD_WITH_TIME,
                          clamp(speed, 0, 30), time_7ms);
@@ -228,7 +228,7 @@ public:
   inline bool angle_drive(double angle_rad, double speed) {
     // BYTE 1 : Angle in intervals of 5 degrees (0~255) - Angle = Byte1 Value * 5
     int angle_deg = rad2deg_norm(angle_rad, -1275, 1275);
-    int speed_clamp = clamp(fabs(speed), 0, 24);
+    int speed_clamp = clamp((int) fabs(speed), 0, 24);
     return send_order2(
           (angle_deg < 0 ? 0x73: 0x74), // CCW : CW,
           fabs(angle_deg/5),
@@ -297,58 +297,60 @@ public:
 
   static bool speed2ticks(const double & v_ms, const double & w_rads,
                           int & v_ticks, int & w_ticks) {
+    double v_clamped = v_ms, w_clamped = w_rads;
     if (fabs(v_ms) > .95 || fabs(w_rads) > 17) {
-      printf("(v:%g, w:%g) out of bounds!\n", v_ms, w_rads);
-      return false;
+      printf("(v:%g, w:%g) out of bounds, clipping!\n", v_clamped, w_clamped);
+      v_clamped = clamp(v_ms, -.95, .95);
+      w_clamped = clamp(w_rads, -17., 17.);
     }
     // first case: linear speed only
-    if (fabs(w_rads) < 0.05) {
+    if (fabs(w_clamped) < 0.05) {
       w_ticks = 0;
-      if (fabs(v_ms) < 0.05)
+      if (fabs(v_clamped) < 0.05)
         v_ticks = 0;
-      else if (fabs(v_ms) < 0.7) // NORMAL: v = 0.0217453422621 * b1
-        v_ticks = clamp(45.98685952820811545096 * v_ms, -32, 32);
+      else if (fabs(v_clamped) < 0.7) // NORMAL: v = 0.0217453422621 * b1
+        v_ticks = clamp((int) (45.98685952820811545096 * v_clamped), -32, 32);
       else // CRAZY: v = 0.0290682838088 * b1
-        v_ticks = clamp(34.40175576162719827641 * v_ms, -32, 32) + 32 * signum(v_ms);
+        v_ticks = clamp((int) (34.40175576162719827641 * v_clamped), -32, 32) + 32 * signum(v_clamped);
     }
     // second case: angular speed only
-    else if (fabs(v_ms) < 0.05) {
+    else if (fabs(v_clamped) < 0.05) {
       v_ticks = 0;
-      if (fabs(w_rads) < 0.05)
+      if (fabs(w_clamped) < 0.05)
         w_ticks = 0;
-      else if (fabs(w_rads) < 13) // NORMAL: w = 0.4177416860037 * b2 - 0.6876060987078
-        w_ticks = clamp(2.39382382344084006941 * w_rads + 1.6460078602299454762, -32, 32);
+      else if (fabs(w_clamped) < 13) // NORMAL: w = 0.4177416860037 * b2 - 0.6876060987078
+        w_ticks = clamp((int) (2.39382382344084006941 * w_clamped + 1.6460078602299454762), -32, 32);
       else // CRAZY: W = 0.7208400618386 * b2 + 0.0191642762841
-        w_ticks = clamp(1.38727028773812161461 * w_rads - 0.02658603107493626709, -32, 32)
-            + 32 * signum(w_rads);
+        w_ticks = clamp((int) (1.38727028773812161461 * w_clamped - 0.02658603107493626709), -32, 32)
+            + 32 * signum(w_clamped);
     }
     // third case: combined (v, w): if possible, use "safe" speeds, in [-32 32]
-    else if (fabs(v_ms) <= .65) {
+    else if (fabs(v_clamped) <= .65) {
       // bLin =  0.50949  45.38459  -0.81221  3.78223
       v_ticks = 0.50949
-          + 45.38459 * v_ms
-          - 0.81221  * w_rads
-          + 3.78223  * v_ms * w_rads;
+          + 45.38459 * v_clamped
+          - 0.81221  * w_clamped
+          + 3.78223  * v_clamped * w_clamped;
       v_ticks = clamp(v_ticks, -32, 32);
       // bAng =  0.98163 -1.82084 11.69517 0.36455
       w_ticks = 0.98163
-          - 1.82084  * v_ms
-          + 11.69517 * w_rads
-          + 0.36455  * v_ms * w_rads;
+          - 1.82084  * v_clamped
+          + 11.69517 * w_clamped
+          + 0.36455  * v_clamped * w_clamped;
       w_ticks = clamp(w_ticks, -32, 32);
     }
     else { // fourth case: combined (v, w):
       //   use crazy speeds with first order regression tick=f(speed), in [-64, 64]:
       // v = 0,0290682838088 * b1
-      v_ticks = clamp(v_ms / .0290682838088, -32, 32);
+      v_ticks = clamp((int) (v_clamped / .0290682838088), -32, 32);
       v_ticks += 32 * signum(v_ticks);
       // W = 0,7208400618386 * b2 + 0,0191642762841
       //w_ticks = clamp((w_rads - 0.0191642762841) /  .7208400618386, -32, 32);
-      w_ticks = clamp((w_rads - 0.0191642762841) /  .1, -32, 32);
+      w_ticks = clamp((int) ((w_clamped - 0.0191642762841) /  .1), -32, 32);
       w_ticks += 32 * signum(w_ticks);
     }
 
-    printf("speed2ticks(%g, %g) -> (%i, %i)\n", v_ms, w_rads, v_ticks, w_ticks);
+    printf("speed2ticks(%g, %g) -> (%i, %i)\n", v_clamped, w_clamped, v_ticks, w_ticks);
     return true;
   } // end speed2ticks
 
@@ -459,10 +461,10 @@ public:
   inline bool set_head_LED(const unsigned int l1, const unsigned int l2,
                            const unsigned int l3, const unsigned int l4) {
     return send_order4(CMD_SET_HEAD_LED,
-                       clamp(l1, 0, 3),
-                       clamp(l2, 0, 3),
-                       clamp(l3, 0, 3),
-                       clamp(l4, 0, 3));
+                       clamp(l1, (uint) 0, (uint) 3),
+                       clamp(l2, (uint) 0, (uint) 3),
+                       clamp(l3, (uint) 0, (uint) 3),
+                       clamp(l4, (uint) 0, (uint) 3));
   }
   //! \param HeadLed l: for each of the four leds, 0=off,1=on,2=blink_slow,3=blink_fast
   inline bool set_head_LED(const HeadLed & l) {
@@ -539,10 +541,11 @@ public:
 
   //! \arg vol (0~7)
   inline bool set_volume(uint vol) {
-    return send_order1(0x06, 247 + clamp(vol, 0, 7) ); // 0xF7­~0xFE for volume
+    //return send_order1(CMD_MIP_VOLUME, 247 + clamp(vol, (uint) 0, (uint) 7) ); // 0xF7­~0xFE for volume
+    return send_order1(CMD_SET_MIP_VOLUME, clamp(vol, (uint) 0, (uint) 7) ); // 0xF7­~0xFE for volume
   }
   //! \return true if the request has been correctly sent to the robot
-  inline bool request_volume() { return send_order0(CMD_MIP_VOLUME); }
+  inline bool request_volume() { return send_order0(CMD_GET_MIP_VOLUME); }
   //! \return volume in 0-7
   inline unsigned int get_volume() { return _volume; }
 
@@ -713,7 +716,8 @@ protected:
   //////////////////////////////////////////////////////////////////////////////
 
   //! clamp a value between boundaries
-  inline static int clamp(int x, int min, int max) {
+  template<class T>
+  inline static T clamp(T x, T min, T max) {
     return (x < min ? min : x > max ? max : x);
   }
 
