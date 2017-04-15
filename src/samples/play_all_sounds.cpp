@@ -30,6 +30,7 @@ int main(int argc, char** argv) {
   Mip mip;
   std::string device_mac = (argc >= 2 ? argv[1] : "00:1A:7D:DA:71:11"),
       mip_mac = (argc >= 3 ? argv[2] : "D0:39:72:B7:AF:66");
+  int sleep_time = (argc >= 4 ? atoi(argv[3]) : 1);
   if (!mip.connect(main_loop, bluetooth_mac2device(device_mac).c_str(), mip_mac.c_str())) {
     printf("Could not connect with device MAC '%s' to MIP with MAC '%s'!\n",
            device_mac.c_str(), mip_mac.c_str());
@@ -37,12 +38,12 @@ int main(int argc, char** argv) {
   }
   // now the real stuff
   //mip.set_volume(5);
-  unsigned int sound_idx = 1;
+  unsigned int sound_idx = (argc >= 5 ? atoi(argv[4]) : 1);
   while(sound_idx < 110) {
     printf("sound_idx:%i\n", sound_idx);
     mip.play_sound(sound_idx);
     ++sound_idx;
-    sleep(1);
+    sleep(sleep_time);
   }
   return 0;
 }
