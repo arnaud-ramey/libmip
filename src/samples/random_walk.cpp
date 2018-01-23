@@ -42,7 +42,7 @@ int main(int argc, char** argv) {
          mip.get_gesture_or_radar_mode(),
          mip.get_gesture_or_radar_mode2str());
 
-  int rotate_in_place_counter = INFINITY;
+  int rotate_in_place_counter = 0;
 
   while(true) {
     if (rotate_in_place_counter < 20) // do nothing

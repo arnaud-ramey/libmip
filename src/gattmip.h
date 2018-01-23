@@ -60,8 +60,8 @@ public:
     double time_flash_on_sec, time_flash_off_sec;
     inline std::string to_string() const {
       std::ostringstream out;
-      out << '(' << r << ',' << g << ',' << b << "), flash:on"
-          <<  time_flash_on_sec << "s, off:" << time_flash_off_sec;
+      out << '(' << r << ',' << g << ',' << b << "), flash: on:"
+          <<  time_flash_on_sec << "s, off:" << time_flash_off_sec << "s";
       return out.str();
     }
   }; // end struct ChestLed
@@ -588,7 +588,7 @@ protected:
       // 0x00 = 0 (min) ~ 0x2D = 45 (max) is holding the weight on the back
       // in other words:0 -> 0, 45 -> 45, 255 -> -1, 211 -> -45
       _weight = (values[0] < 100 ? values[0] : values[0] - 256) + 5; // -5° when not moving
-    else if (cmd == CMD_MIP_SOFTWARE_VERSION && nvalues == 5) {
+    else if (cmd == CMD_CHEST_LED && nvalues == 5) {
       _chest_led.r = values[0];
       _chest_led.g = values[1];
       _chest_led.b = values[2];
