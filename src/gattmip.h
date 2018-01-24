@@ -56,7 +56,8 @@ class Mip {
 public:
   //! a minimalistic data structure for chest led info
   struct ChestLed {
-    int r, g, b;
+    int r, g, b; //! in [0, 255]
+    //! both equal to 0 when no blink
     double time_flash_on_sec, time_flash_off_sec;
     inline std::string to_string() const {
       std::ostringstream out;
@@ -75,7 +76,7 @@ public:
         case 2: return "blink_slow";
         case 3: return "blink_fast";
         default:  return "error";
-      }
+        }
     }
     inline std::string to_string() const {
       std::ostringstream out;
@@ -105,14 +106,18 @@ public:
     _status = ERROR;
     _weight = ERROR;
     _software_version = ERROR;
-    _chest_led.r = _chest_led.g = _chest_led.b = ERROR;
-    _chest_led.time_flash_on_sec = _chest_led.time_flash_off_sec = ERROR;
-    _head_led.l1 = _head_led.l2 = _head_led.l3 = _head_led.l4 = ERROR;
     _odometer_reading_m = ERROR;
     _gesture_detect = ERROR;
     _gesture_or_radar_mode = ERROR;
     _radar_response = ERROR;
     _shake_detected = ERROR;
+    // default LED values on connect
+    _chest_led.g =  255;
+    _chest_led.r = _chest_led.b = 0;
+    _chest_led.time_flash_on_sec = _chest_led.time_flash_off_sec = 0;
+    _chest_led_cached = _chest_led;
+    _head_led.l1 = _head_led.l2 = _head_led.l3 = _head_led.l4 = 1;
+    _head_led_cached = _head_led;
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -123,9 +128,9 @@ public:
     _context = g_main_loop_get_context(main_loop);
     int ntry = 0;
     while(ntry++ < 100 && !_is_connected) {
-      pump_up_callbacks();
-      usleep(50E3);
-    }
+        pump_up_callbacks();
+        usleep(50E3);
+      }
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -164,16 +169,16 @@ public:
     GIOChannel* iochannel = gatt_connect(device_name, mip_mac, dst_type, sec_level, 0, 0,
                                          Mip::connect_cb, this, &error);
     if (iochannel == NULL) {
-      printf("Error in gatt_connect('%s'->'%s'): '%s'\n",
-             device_name, mip_mac, error->message);
-      return false;
-    }
+        printf("Error in gatt_connect('%s'->'%s'): '%s'\n",
+               device_name, mip_mac, error->message);
+        return false;
+      }
     set_main_loop(main_loop);
     if (!_is_connected) {
-      printf("Error in gatt_connect('%s'->'%s'): connect_cb() not called!\n",
-             device_name, mip_mac);
-      return false;
-    }
+        printf("Error in gatt_connect('%s'->'%s'): connect_cb() not called!\n",
+               device_name, mip_mac);
+        return false;
+      }
     DEBUG_PRINT("gatt_connect('%s'->'%s') succesful\n", device_name, mip_mac);
     return true;
   }
@@ -299,56 +304,56 @@ public:
                           int & v_ticks, int & w_ticks) {
     double v_clamped = v_ms, w_clamped = w_rads;
     if (fabs(v_ms) > .95 || fabs(w_rads) > 17) {
-      printf("(v:%g, w:%g) out of bounds, clipping!\n", v_clamped, w_clamped);
-      v_clamped = clamp(v_ms, -.95, .95);
-      w_clamped = clamp(w_rads, -17., 17.);
-    }
+        printf("(v:%g, w:%g) out of bounds, clipping!\n", v_clamped, w_clamped);
+        v_clamped = clamp(v_ms, -.95, .95);
+        w_clamped = clamp(w_rads, -17., 17.);
+      }
     // first case: linear speed only
     if (fabs(w_clamped) < 0.05) {
-      w_ticks = 0;
-      if (fabs(v_clamped) < 0.05)
-        v_ticks = 0;
-      else if (fabs(v_clamped) < 0.7) // NORMAL: v = 0.0217453422621 * b1
-        v_ticks = clamp((int) (45.98685952820811545096 * v_clamped), -32, 32);
-      else // CRAZY: v = 0.0290682838088 * b1
-        v_ticks = clamp((int) (34.40175576162719827641 * v_clamped), -32, 32) + 32 * signum(v_clamped);
-    }
+        w_ticks = 0;
+        if (fabs(v_clamped) < 0.05)
+          v_ticks = 0;
+        else if (fabs(v_clamped) < 0.7) // NORMAL: v = 0.0217453422621 * b1
+          v_ticks = clamp((int) (45.98685952820811545096 * v_clamped), -32, 32);
+        else // CRAZY: v = 0.0290682838088 * b1
+          v_ticks = clamp((int) (34.40175576162719827641 * v_clamped), -32, 32) + 32 * signum(v_clamped);
+      }
     // second case: angular speed only
     else if (fabs(v_clamped) < 0.05) {
-      v_ticks = 0;
-      if (fabs(w_clamped) < 0.05)
-        w_ticks = 0;
-      else if (fabs(w_clamped) < 13) // NORMAL: w = 0.4177416860037 * b2 - 0.6876060987078
-        w_ticks = clamp((int) (2.39382382344084006941 * w_clamped + 1.6460078602299454762), -32, 32);
-      else // CRAZY: W = 0.7208400618386 * b2 + 0.0191642762841
-        w_ticks = clamp((int) (1.38727028773812161461 * w_clamped - 0.02658603107493626709), -32, 32)
-            + 32 * signum(w_clamped);
-    }
+        v_ticks = 0;
+        if (fabs(w_clamped) < 0.05)
+          w_ticks = 0;
+        else if (fabs(w_clamped) < 13) // NORMAL: w = 0.4177416860037 * b2 - 0.6876060987078
+          w_ticks = clamp((int) (2.39382382344084006941 * w_clamped + 1.6460078602299454762), -32, 32);
+        else // CRAZY: W = 0.7208400618386 * b2 + 0.0191642762841
+          w_ticks = clamp((int) (1.38727028773812161461 * w_clamped - 0.02658603107493626709), -32, 32)
+              + 32 * signum(w_clamped);
+      }
     // third case: combined (v, w): if possible, use "safe" speeds, in [-32 32]
     else if (fabs(v_clamped) <= .65) {
-      // bLin =  0.50949  45.38459  -0.81221  3.78223
-      v_ticks = 0.50949
-          + 45.38459 * v_clamped
-          - 0.81221  * w_clamped
-          + 3.78223  * v_clamped * w_clamped;
-      v_ticks = clamp(v_ticks, -32, 32);
-      // bAng =  0.98163 -1.82084 11.69517 0.36455
-      w_ticks = 0.98163
-          - 1.82084  * v_clamped
-          + 11.69517 * w_clamped
-          + 0.36455  * v_clamped * w_clamped;
-      w_ticks = clamp(w_ticks, -32, 32);
-    }
+        // bLin =  0.50949  45.38459  -0.81221  3.78223
+        v_ticks = 0.50949
+            + 45.38459 * v_clamped
+            - 0.81221  * w_clamped
+            + 3.78223  * v_clamped * w_clamped;
+        v_ticks = clamp(v_ticks, -32, 32);
+        // bAng =  0.98163 -1.82084 11.69517 0.36455
+        w_ticks = 0.98163
+            - 1.82084  * v_clamped
+            + 11.69517 * w_clamped
+            + 0.36455  * v_clamped * w_clamped;
+        w_ticks = clamp(w_ticks, -32, 32);
+      }
     else { // fourth case: combined (v, w):
-      //   use crazy speeds with first order regression tick=f(speed), in [-64, 64]:
-      // v = 0,0290682838088 * b1
-      v_ticks = clamp((int) (v_clamped / .0290682838088), -32, 32);
-      v_ticks += 32 * signum(v_ticks);
-      // W = 0,7208400618386 * b2 + 0,0191642762841
-      //w_ticks = clamp((w_rads - 0.0191642762841) /  .7208400618386, -32, 32);
-      w_ticks = clamp((int) ((w_clamped - 0.0191642762841) /  .1), -32, 32);
-      w_ticks += 32 * signum(w_ticks);
-    }
+        //   use crazy speeds with first order regression tick=f(speed), in [-64, 64]:
+        // v = 0,0290682838088 * b1
+        v_ticks = clamp((int) (v_clamped / .0290682838088), -32, 32);
+        v_ticks += 32 * signum(v_ticks);
+        // W = 0,7208400618386 * b2 + 0,0191642762841
+        //w_ticks = clamp((w_rads - 0.0191642762841) /  .7208400618386, -32, 32);
+        w_ticks = clamp((int) ((w_clamped - 0.0191642762841) /  .1), -32, 32);
+        w_ticks += 32 * signum(w_ticks);
+      }
 
     printf("speed2ticks(%g, %g) -> (%i, %i)\n", v_clamped, w_clamped, v_ticks, w_ticks);
     return true;
@@ -430,43 +435,72 @@ public:
 
   //! r,g,b in [0, 255]
   inline bool set_chest_LED(const int & r, const int & g, const int & b) {
+    _chest_led_cached.r = clamp(r, 0, 255);
+    _chest_led_cached.g = clamp(g, 0, 255);
+    _chest_led_cached.b = clamp(b, 0, 255);
+    _chest_led_cached.time_flash_on_sec = 0;
+    _chest_led_cached.time_flash_off_sec = 0;
     return send_order3(CMD_SET_CHEST_LED,
-                       clamp(r, 0, 255),
-                       clamp(g, 0, 255),
-                       clamp(b, 0, 255));
+                       _chest_led_cached.r,
+                       _chest_led_cached.g,
+                       _chest_led_cached.b);
   }
   //! r,g,b in [0, 255],
   inline bool set_chest_LED(const int & r, const int & g, const int & b,
                             const double & time_flash_on_sec,
                             const double & time_flash_off_sec) {
+    _chest_led_cached.r = clamp(r, 0, 255);
+    _chest_led_cached.g = clamp(g, 0, 255);
+    _chest_led_cached.b = clamp(b, 0, 255);
+    _chest_led_cached.time_flash_on_sec = clamp( (int) (time_flash_on_sec * 50), 1, 255);
+    _chest_led_cached.time_flash_off_sec = clamp( (int) (time_flash_off_sec * 50), 1, 255);
     // TIME ON in 10ms intervals
     return send_order5(CMD_FLASH_CHEST_LED,
-                       clamp(r, 0, 255),
-                       clamp(g, 0, 255),
-                       clamp(b, 0, 255),
-                       clamp( (int) (time_flash_on_sec * 50), 1, 255),
-                       clamp( (int) (time_flash_off_sec * 50), 1, 255));
+                       _chest_led_cached.r,
+                       _chest_led_cached.g,
+                       _chest_led_cached.b,
+                       _chest_led_cached.time_flash_on_sec,
+                       _chest_led_cached.time_flash_off_sec);
   }
   inline bool set_chest_LED(const ChestLed & l) {
-    return set_chest_LED(l.r, l.g, l.b, l.time_flash_on_sec, l.time_flash_off_sec);
+    if (l.time_flash_on_sec > 0 && l.time_flash_off_sec > 0)
+      return set_chest_LED(l.r, l.g, l.b, l.time_flash_on_sec, l.time_flash_off_sec);
+    return set_chest_LED(l.r, l.g, l.b);
   }
   //! \return true if the request has been correctly sent to the robot
   inline bool request_chest_LED() { return send_order0(0x83); }
   //! \return r,g,b in [0, 255]
   inline ChestLed get_chest_LED() { return _chest_led; }
+  inline ChestLed get_chest_LED_cached() { return _chest_led_cached; }
 
   //////////////////////////////////////////////////////////////////////////////
 
   //! \param HeadLed l: for each of the four leds, 0=off,1=on,2=blink_slow,3=blink_fast
   inline bool set_head_LED(const unsigned int l1, const unsigned int l2,
                            const unsigned int l3, const unsigned int l4) {
+    _head_led_cached.l1 = clamp(l1, (uint) 0, (uint) 3);
+    _head_led_cached.l2 = clamp(l2, (uint) 0, (uint) 3);
+    _head_led_cached.l3 = clamp(l3, (uint) 0, (uint) 3);
+    _head_led_cached.l4 = clamp(l4, (uint) 0, (uint) 3);
     return send_order4(CMD_SET_HEAD_LED,
-                       clamp(l1, (uint) 0, (uint) 3),
-                       clamp(l2, (uint) 0, (uint) 3),
-                       clamp(l3, (uint) 0, (uint) 3),
-                       clamp(l4, (uint) 0, (uint) 3));
+                       _head_led_cached.l1, _head_led_cached.l2,
+                       _head_led_cached.l3, _head_led_cached.l4);
   }
   //! \param HeadLed l: for each of the four leds, 0=off,1=on,2=blink_slow,3=blink_fast
+  inline bool set_head_LED(const unsigned int idx,
+                           const unsigned int value) {
+    switch (idx) {
+      case 1:   return set_head_LED(value, _head_led_cached.l2,
+                                    _head_led_cached.l3, _head_led_cached.l4);
+      case 2:   return set_head_LED(_head_led_cached.l1, value,
+                                    _head_led_cached.l3, _head_led_cached.l4);
+      case 3:   return set_head_LED(_head_led_cached.l1, _head_led_cached.l2,
+                                    value, _head_led_cached.l4);
+      case 4:   return set_head_LED(_head_led_cached.l1, _head_led_cached.l2,
+                                    _head_led_cached.l3, value);
+      default:  return false;
+      }
+  }
   inline bool set_head_LED(const HeadLed & l) {
     return set_head_LED(l.l1, l.l2, l.l3, l.l4);
   }
@@ -474,6 +508,7 @@ public:
   inline bool request_head_LED() { return send_order0(CMD_HEAD_LED); }
   //! \return HeadLed l: for each of the four leds, 0=off,1=on,2=blink_slow,3=blink_fast
   inline HeadLed get_head_LED() { return _head_led; }
+  inline HeadLed get_head_LED_cached() { return _head_led_cached; }
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -562,9 +597,9 @@ public:
   }
   inline bool pump_up_callbacks(unsigned int ntimes) {
     for (unsigned int i = 0; i < ntimes; ++i) {
-      pump_up_callbacks();
-      usleep(50 * 1000);
-    }
+        pump_up_callbacks();
+        usleep(50 * 1000);
+      }
     return true;
   }
 
@@ -578,10 +613,10 @@ protected:
     if (cmd == CMD_GET_CURRENT_MIP_GAME_MODE && nvalues == 1)
       _game_mode = values[0];
     else if (cmd == CMD_MIP_STATUS && nvalues == 2) {
-      // 0x4D = 77 = 4.0V, 0x7C = 124 = 6.4V
-      _battery_voltage = 4.0 + (values[0]-77)*2.4/47;
-      _status = values[1];
-    }
+        // 0x4D = 77 = 4.0V, 0x7C = 124 = 6.4V
+        _battery_voltage = 4.0 + (values[0]-77)*2.4/47;
+        _status = values[1];
+      }
     else if (cmd == CMD_REQUEST_WEIGHT_UPDATE && nvalues == 1)
       // 0xD3 = 211 = (-­45 degree) ~­ 0x2D = 45 = (+45 degree)
       // 0xD3 = 211 (max) ~ 0xFF = 255 (min) is holding the weight on the front
@@ -589,30 +624,32 @@ protected:
       // in other words:0 -> 0, 45 -> 45, 255 -> -1, 211 -> -45
       _weight = (values[0] < 100 ? values[0] : values[0] - 256) + 5; // -5° when not moving
     else if (cmd == CMD_CHEST_LED && nvalues == 5) {
-      _chest_led.r = values[0];
-      _chest_led.g = values[1];
-      _chest_led.b = values[2];
-      _chest_led.time_flash_on_sec = values[3] * 20E-3; // step of 50 ms
-      _chest_led.time_flash_off_sec = values[4] * 20E-3;
-    }
+        _chest_led.r = values[0];
+        _chest_led.g = values[1];
+        _chest_led.b = values[2];
+        _chest_led.time_flash_on_sec = values[3] * 20E-3; // step of 50 ms
+        _chest_led.time_flash_off_sec = values[4] * 20E-3;
+        _chest_led_cached = _chest_led; // store cached value
+      }
     else if (cmd == CMD_HEAD_LED && nvalues == 4) {
-      _head_led.l1 = values[0];
-      _head_led.l2 = values[1];
-      _head_led.l3 = values[2];
-      _head_led.l4 = values[3];
-    }
+        _head_led.l1 = values[0];
+        _head_led.l2 = values[1];
+        _head_led.l3 = values[2];
+        _head_led.l4 = values[3];
+        _head_led_cached = _head_led; // store cached value
+      }
     else if (cmd == CMD_ODOMETER_READING && nvalues == 4) {
-      // BYTE 1 & 2 & 3 & 4 : Distance, Byte1 is highest byte
-      // ((0~4294967296)/48.5) cm
-      // 1 cm=48.5 units,
-      // 0xFFFFFFFF=4294967295=88556026.7cm
-      double value = values[3]
-          + 255 * values[2]
-          + 255 * 255 * values[1]
-          + 255 * 255 * 255 * values[0];
-      double dist_cm = value / 48.5;
-      _odometer_reading_m = dist_cm * .01;
-    }
+        // BYTE 1 & 2 & 3 & 4 : Distance, Byte1 is highest byte
+        // ((0~4294967296)/48.5) cm
+        // 1 cm=48.5 units,
+        // 0xFFFFFFFF=4294967295=88556026.7cm
+        double value = values[3]
+            + 255 * values[2]
+            + 255 * 255 * values[1]
+            + 255 * 255 * 255 * values[0];
+        double dist_cm = value / 48.5;
+        _odometer_reading_m = dist_cm * .01;
+      }
     else if (cmd == CMD_GESTURE_DETECT && nvalues == 1)
       _gesture_detect = values[0];
     else if (cmd == CMD_RADAR_MODE_STATUS && nvalues == 1)
@@ -622,20 +659,20 @@ protected:
     else if (cmd == CMD_SHAKE_DETECTED && nvalues == 1)
       _shake_detected = values[0];
     else if (cmd == CMD_MIP_SOFTWARE_VERSION && nvalues == 4) {
-      std::ostringstream vstr;
-      vstr << "20" << std::setw(2) << std::setfill('0') << values[0] // year
-           << "/"  << std::setw(2) << std::setfill('0') << values[1] // month
-           << "/"  << std::setw(2) << std::setfill('0') << values[2] // day
-           << "-"  << std::setw(2) << std::setfill('0') << values[3]; // version
-      _software_version = vstr.str();
-    }
+        std::ostringstream vstr;
+        vstr << "20" << std::setw(2) << std::setfill('0') << values[0] // year
+             << "/"  << std::setw(2) << std::setfill('0') << values[1] // month
+             << "/"  << std::setw(2) << std::setfill('0') << values[2] // day
+             << "-"  << std::setw(2) << std::setfill('0') << values[3]; // version
+        _software_version = vstr.str();
+      }
     else if (cmd == CMD_MIP_HARDWARE_INFO && nvalues == 2) {
-      std::ostringstream vstr;
-      vstr << std::setw(2) << std::setfill('0') << values[0] // voice chip
-           << "-"
-           << std::setw(2) << std::setfill('0') << values[1];
-      _hardware_version = vstr.str();
-    }
+        std::ostringstream vstr;
+        vstr << std::setw(2) << std::setfill('0') << values[0] // voice chip
+             << "-"
+             << std::setw(2) << std::setfill('0') << values[1];
+        _hardware_version = vstr.str();
+      }
     else if (cmd == CMD_MIP_VOLUME && nvalues == 1)
       _volume = values[0];
     else // unknown command -> return
@@ -656,9 +693,9 @@ protected:
     //printf("retval:%i\n", retval);
     ok = (retval == _nattrib);
     if (retval != _nattrib) {
-      printf("gattmip: command %i='%s' did not return expected value!\n",
-             value[0], cmd2str(value[0]));
-    }
+        printf("gattmip: command %i='%s' did not return expected value!\n",
+               value[0], cmd2str(value[0]));
+      }
     ok = ok && pump_up_callbacks();
     return ok;
   }
@@ -762,14 +799,14 @@ protected:
       default:
         printf("Invalid opcode %i\n", pdu[0]);
         return;
-    }
+      }
 
     std::ostringstream hex_ans_stream;
     //DEBUG_PRINT("values: ");
     for (i = 3; i < len; i++) {
-      hex_ans_stream << (char) pdu[i];
-      //DEBUG_PRINT("'%c'=%i=0x%02x ", pdu[i], pdu[i], pdu[i]);
-    }
+        hex_ans_stream << (char) pdu[i];
+        //DEBUG_PRINT("'%c'=%i=0x%02x ", pdu[i], pdu[i], pdu[i]);
+      }
     // DEBUG_PRINT("\n");
     std::string hex_ans = hex_ans_stream.str();
     // command - the first 2 chars are the command number
@@ -795,9 +832,9 @@ protected:
   static void connect_cb(GIOChannel *io, GError *err, gpointer user_data) {
     DEBUG_PRINT("connect_cb()\n");
     if (err) {
-      g_printerr("%s\n", err->message);
-      return;
-    }
+        g_printerr("%s\n", err->message);
+        return;
+      }
     Mip* this_ = (Mip*) user_data;
     this_->_attrib = g_attrib_new(io);
     this_->_is_connected = true;
@@ -840,9 +877,9 @@ protected:
   //! "VV-HH", where VV is the voice chip version and HH is the hardware version
   std::string _hardware_version;
   //! \see ChestLed structure
-  ChestLed _chest_led;
+  ChestLed _chest_led, _chest_led_cached;
   //! \see HeadLed structure
-  HeadLed _head_led;
+  HeadLed _head_led, _head_led_cached;
   //! meters
   double _odometer_reading_m;
   //! \see Gesture enum
